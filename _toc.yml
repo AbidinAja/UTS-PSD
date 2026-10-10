@@ -1,0 +1,14 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: intro
+chapters:
+- file: Tugas/dataran/dataran
+  sections:
+  - file: Tugas/dataran/bussiness-understanding
+  - file: Tugas/dataran/data-understanding
+  - file: Tugas/dataran/data-preprocessing
+  - file: Tugas/dataran/modeling
+  - file: Tugas/dataran/visualisasi
+
