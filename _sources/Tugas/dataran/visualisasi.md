@@ -123,9 +123,9 @@ df_bersih = df.dropna(subset=fitur + ['label_teks']).copy()
 
 # Ambil sampel acak berimbang per kelas (600 per kelas)
 # Mempertahankan karakteristik spektral asli piksel namun memungkinkan inferensi cepat (~1 menit)
-df_sample = df_bersih.groupby('label_teks', group_keys=False).apply(
-    lambda x: x.sample(n=min(len(x), 600), random_state=42)
-)
+# Ambil sampel acak berimbang per kelas (600 per kelas)
+dfs_sample = [sub.sample(n=min(len(sub), 600), random_state=42) for _, sub in df_bersih.groupby('label_teks')]
+df_sample = pd.concat(dfs_sample, ignore_index=True)
 
 X_train = df_sample[fitur]
 y_train = df_sample['label_teks']
@@ -178,6 +178,7 @@ for idx, row in polygons_pred.iterrows():
     label_asli = str(row['label_teks'])
     color = colors.get(label_pred, 'black')
     is_correct = (label_pred == label_asli)
+    centroid = row['geometry'].centroid
     
     try:
         # Plot dasar (sesuai prediksi)
@@ -192,7 +193,7 @@ for idx, row in polygons_pred.iterrows():
             tooltip=f"Prediksi: {label_pred} | Asli: {label_asli} (ID: {row['poligon_id']})"
         ).add_to(feature_groups_pred[label_pred])
 
-        # Plot tambahan (highlight outline merah) jika salah prediksi
+        # Plot tambahan (highlight outline merah dan tanda seru) jika salah prediksi
         if not is_correct:
             folium.GeoJson(
                 data=row['geometry'].__geo_interface__,
@@ -204,57 +205,19 @@ for idx, row in polygons_pred.iterrows():
                 },
                 tooltip=f"⚠️ SALAH PREDIKSI! Asli: {label_asli}, Prediksi: {label_pred} (ID: {row['poligon_id']})"
             ).add_to(salah_prediksi_group)
+            
+            # Tambahkan marker Tanda Seru (!) pada poligon yang salah diprediksi
+            folium.Marker(
+                location=[centroid.y, centroid.x],
+                icon=folium.Icon(color='red', icon='exclamation', prefix='fa'),
+                tooltip=f"⚠️ SALAH PREDIKSI! Asli: {label_asli} | Prediksi: {label_pred} (ID: {row['poligon_id']})"
+            ).add_to(salah_prediksi_group)
     except Exception:
         pass
 
 folium.LayerControl().add_to(m_pred)
 m_pred
 ```
-
-### Visualisasi Prediksi Menyeluruh (Skala Raster Jawa Timur)
-
-Pada peta ketiga ini, kita akan membawa model **KNN** selangkah lebih maju dengan memproyeksikannya ke seluruh citra satelit wilayah Jawa Timur (atau *sample area* yang luas), bukan lagi terbatas pada batas poligon *ground truth*. 
-
-Karena data citra satelit mentah berupa raster berukuran besar, kita akan mengekstrak piksel-piksel raster `.tif` (terdiri dari 5 *band* yang sama), menghitung indeks spektralnya, memprediksi piksel per piksel menggunakan model klasifikasi, dan mengubahnya menjadi *layer* transparan per kelas. Melalui antarmuka Folium, Anda dapat mengaktifkan atau mematikan centang pada kelas tertentu (misal: hanya melihat "Hutan" dan "Sawah").
-
-Untuk memperoleh citra satelit skala regional Jawa Timur, kita menggunakan layanan openEO Copernicus Data Space Ecosystem (CDSE). Skrip berikut digunakan untuk mengunduh komposit bulanan Sentinel-2 L2A (B02, B03, B04, B08, B11) dengan resolusi spasial ~250m:
-
-```python
-import os
-import openeo
-
-FILE_RASTER = '../../Data/UTS/jatim_250m.tif'
-
-# Unduh data satelit Jawa Timur via openEO Batch Job
-if not os.path.exists(FILE_RASTER):
-    connection = openeo.connect("https://openeo.dataspace.copernicus.eu").authenticate_oidc()
-    
-    bbox_jatim = {
-        "west": 110.89, "south": -8.84,
-        "east": 114.63, "north": -6.65
-    }
-    
-    cube = connection.load_collection(
-        "SENTINEL2_L2A",
-        spatial_extent=bbox_jatim,
-        temporal_extent=["2024-08-01", "2024-08-31"],
-        bands=['B02', 'B03', 'B04', 'B08', 'B11'],
-        max_cloud_cover=30
-    )
-    
-    # Agregasi waktu (Median) & resampling resolusi ke ~250 meter
-    cube = cube.median_time()
-    cube = cube.resample_spatial(resolution=0.0025, projection=4326)
-    cube = cube.save_result(format="GTiff")
-    
-    # Eksekusi via Batch Job
-    job = cube.create_job(title="Jatim_Composite_250m")
-    job.start_and_wait()
-    job.get_results().download_file(FILE_RASTER)
-```
-
-Setelah citra `jatim_250m.tif` tersedia, kita mengekstrak nilai reflektansi dari masing-masing band, menghitung indeks spektral, melakukan prediksi piksel per piksel menggunakan model **KNN**, dan menampilkannya ke dalam peta interaktif Folium:
-
 ```{code-cell} ipython3
 :tags: [hide-input]
 
@@ -263,6 +226,7 @@ import warnings
 import rasterio
 import numpy as np
 import folium
+from scipy.ndimage import label, binary_closing, binary_fill_holes, binary_dilation
 
 warnings.filterwarnings('ignore')
 
@@ -281,10 +245,8 @@ if not os.path.exists(FILE_RASTER):
 
 m_full = None
 
-# BACA RASTER DAN LAKUKAN PREDIKSI
 if os.path.exists(FILE_RASTER):
     with rasterio.open(FILE_RASTER) as src:
-        # Urutan dari openEO biasanya berdasar abjad band atau urutan request: B02, B03, B04, B08, B11
         b2 = src.read(1).astype(float)
         b3 = src.read(2).astype(float)
         b4 = src.read(3).astype(float)
@@ -296,7 +258,6 @@ if os.path.exists(FILE_RASTER):
         center_lat = (bounds.bottom + bounds.top) / 2
         center_lon = (bounds.left + bounds.right) / 2
 
-    # Menghitung ulang Indeks Spektral
     e = 1e-9
     ndvi = (b8 - b4) / (b8 + b4 + e)
     ndwi = (b3 - b8) / (b3 + b8 + e)
@@ -304,32 +265,73 @@ if os.path.exists(FILE_RASTER):
     ndbi = (b11 - b8) / (b11 + b8 + e)
     
     height, width = b2.shape
+    valid_mask = (b2 > 0) & (b2 != -32768) & (b8 > 0) & (b11 > 0)
+    valid_mask_1d = valid_mask.flatten()
     
-    import warnings
-    warnings.filterwarnings('ignore')
-    
-    # Ratakan (flatten) array 2D menjadi 1D
     features_stack = np.column_stack((
         b2.flatten(), b3.flatten(), b4.flatten(), b8.flatten(), b11.flatten(),
         ndvi.flatten(), ndwi.flatten(), mndwi.flatten(), ndbi.flatten()
     ))
     
-    # Deteksi piksel valid (bukan padding 0 dan tidak ada NaN/inf)
-    valid_mask = (b2.flatten() > 0) & np.isfinite(features_stack).all(axis=1)
-    
-    # Lakukan scaling & prediksi langsung pada seluruh piksel valid
     pred_1d = np.full(height * width, fill_value="", dtype=object)
-    if np.any(valid_mask):
-        features_valid = pd.DataFrame(features_stack[valid_mask], columns=fitur)
-        features_scaled = scaler.transform(features_valid)
-        print("Memprediksi tutupan lahan seluruh Jawa Timur dengan KNN...")
-        pred_1d[valid_mask] = knn_model.predict(features_scaled)
-        print("Prediksi selesai! Membangun peta interaktif...")
-        
-    pred_2d = pred_1d.reshape((height, width))
-    valid_2d = valid_mask.reshape((height, width))
     
-    # 3. PLOTTING KE PETA FOLIUM
+    if np.any(valid_mask_1d):
+        features_valid = features_stack[valid_mask_1d]
+        features_scaled = scaler.transform(features_valid)
+        
+        chunk_size = 50000
+        n_valid = len(features_valid)
+        preds_list = []
+        for start in range(0, n_valid, chunk_size):
+            end = min(start + chunk_size, n_valid)
+            chunk_pred = knn_model.predict(features_scaled[start:end])
+            preds_list.append(chunk_pred)
+            
+        preds_all_valid = np.concatenate(preds_list)
+        
+        # 1. Segmentasi Morfologis Daratan Pulau
+        daratan_inti = valid_mask & (ndvi > 0.15) & (mndwi < 0.10)
+        daratan_morfologi = binary_closing(daratan_inti, structure=np.ones((7, 7)))
+        daratan_morfologi = binary_fill_holes(daratan_morfologi)
+        
+        labeled_land, _ = label(daratan_morfologi)
+        land_sizes = np.bincount(labeled_land.ravel())
+        land_sizes[0] = 0
+        
+        mask_daratan_2d = np.isin(labeled_land, np.where(land_sizes > 100)[0])
+        mask_daratan_2d = binary_dilation(mask_daratan_2d, structure=np.ones((5, 5))) & valid_mask
+        
+        mask_laut_murni_2d = valid_mask & ~mask_daratan_2d
+        mask_laut_1d = mask_laut_murni_2d.flatten()[valid_mask_1d]
+        mask_darat_1d = mask_daratan_2d.flatten()[valid_mask_1d]
+        
+        # Laut Lepas murni
+        preds_all_valid[mask_laut_1d] = 'Laut'
+        
+        # 2. Danau di daratan
+        mndwi_v = mndwi.flatten()[valid_mask_1d]
+        b8_v = b8.flatten()[valid_mask_1d]
+        ndvi_v = ndvi.flatten()[valid_mask_1d]
+        
+        is_air_daratan = mask_darat_1d & (mndwi_v > 0.12) & (b8_v < 1300)
+        preds_all_valid[is_air_daratan] = 'Danau'
+        
+        # 3. Koreksi Biofisik Kawasan Timur (Jember, Banyuwangi, dsb.)
+        false_bangunan = mask_darat_1d & (preds_all_valid == 'Bangunan') & (ndvi_v > 0.25)
+        preds_all_valid[false_bangunan & (ndvi_v > 0.45)] = 'Hutan'
+        preds_all_valid[false_bangunan & (ndvi_v <= 0.45)] = 'Sawah'
+        
+        salah_laut_di_darat = mask_darat_1d & (preds_all_valid == 'Laut')
+        preds_all_valid[salah_laut_di_darat & (ndvi_v > 0.40)] = 'Hutan'
+        preds_all_valid[salah_laut_di_darat & (ndvi_v <= 0.40) & (ndvi_v > 0.20)] = 'Sawah'
+        preds_all_valid[salah_laut_di_darat & (ndvi_v <= 0.20)] = 'Bangunan'
+        
+        pred_1d[valid_mask_1d] = preds_all_valid
+
+    pred_2d = pred_1d.reshape((height, width))
+    valid_2d = valid_mask
+    
+    # Plotting ke Peta Folium
     m_full = folium.Map(
         location=[center_lat, center_lon], 
         zoom_start=8, 
@@ -337,11 +339,8 @@ if os.path.exists(FILE_RASTER):
         attr='Google Satellite'
     )
     
-    # Buat Image Overlay untuk tiap kelas (layer toggleable)
     for label_str, hex_color in colors.items():
         rgba_img = np.zeros((height, width, 4), dtype=np.uint8)
-        
-        # Mask: Prediksi label tsb DAN merupakan piksel valid
         mask = (pred_2d == label_str) & valid_2d
         
         if np.any(mask):
@@ -349,7 +348,7 @@ if os.path.exists(FILE_RASTER):
             rgba_img[mask, 0] = r
             rgba_img[mask, 1] = g
             rgba_img[mask, 2] = b
-            rgba_img[mask, 3] = 180  # Opacity 180/255 agar satelit asli sedikit terlihat
+            rgba_img[mask, 3] = 180
             
             folium.raster_layers.ImageOverlay(
                 image=rgba_img,
@@ -361,6 +360,5 @@ if os.path.exists(FILE_RASTER):
     
     folium.LayerControl().add_to(m_full)
 
-# Menampilkan peta secara langsung ke Jupyter Book
 m_full
 ```
