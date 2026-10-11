@@ -123,9 +123,9 @@ df_bersih = df.dropna(subset=fitur + ['label_teks']).copy()
 
 # Ambil sampel acak berimbang per kelas (600 per kelas)
 # Mempertahankan karakteristik spektral asli piksel namun memungkinkan inferensi cepat (~1 menit)
-df_sample = df_bersih.groupby('label_teks', group_keys=False).apply(
-    lambda x: x.sample(n=min(len(x), 600), random_state=42)
-)
+# Ambil sampel acak berimbang per kelas (600 per kelas)
+dfs_sample = [sub.sample(n=min(len(sub), 600), random_state=42) for _, sub in df_bersih.groupby('label_teks')]
+df_sample = pd.concat(dfs_sample, ignore_index=True)
 
 X_train = df_sample[fitur]
 y_train = df_sample['label_teks']
