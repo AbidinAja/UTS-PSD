@@ -650,3 +650,27 @@ m2.save("hasil_klasifikasi_regional_jatim.html")
 </div>
 ```
 
+---
+
+### 5.6. Kesimpulan & Rekomendasi
+
+Berdasarkan seluruh rangkaian proses pengolahan data, pemodelan mesin (*machine learning*), evaluasi metrik, hingga visualisasi interaktif spasial yang telah dilakukan, dapat diambil beberapa kesimpulan pokok:
+
+1. **Efektivitas Model Klasifikasi (KNN)**:
+   * Algoritma **K-Nearest Neighbors (KNN)** terbukti sangat efektif untuk klasifikasi tutupan lahan berbasis data spektral Sentinel-2A. Pada pengujian independen sebanyak **64.430 sampel piksel**, model mencapai **Akurasi Keseluruhan 98.18%** serta **Weighted F1-Score 98.2%**.
+   * Model ini mengungguli pendekatan Naive Bayes karena mampu menangani korelasi spasio-spektral non-linear antar-fitur band satelit (B02, B03, B04, B08, B11) dan indeks spektral (NDVI, NDWI, MNDWI, NDBI).
+
+2. **Daya Pisah Spektral per Kelas**:
+   * **Laut dan Perairan Terbuka**: Mencapai performa tertinggi (**F1-Score 99.5%**) berkat penyerapan radiasi inframerah dekat (NIR/B08) dan SWIR (B11) yang sangat kuat.
+   * **Vegetasi (Hutan & Mangrove)**: Memiliki separasi yang kokoh (**F1-Score > 97%**), di mana rasio NDVI dan MNDWI berhasil membedakan kawasan mangrove pesisir bertanah basah dari hutan daratan kering.
+   * **Tantangan Spektral Campuran**: Piksel **Bangunan** (F1-score 84.7%) dan **Sawah** (F1-score 90.3%) memiliki tantangan piksel campuran (*mixed pixel*) akibat keberadaan pepohonan pekarangan kota serta fase penggenangan/bera pada petak sawah.
+
+3. **Keandalan Spasial Tingkat Poligon (Convex Hull)**:
+   * Pada evaluasi agregat per entitas geografis (268 poligon uji), model berhasil memprediksi **259 poligon secara tepat (96.6%)** dan hanya **9 poligon (3.4%)** yang mengalami salah klasifikasi.
+   * Penandaan visual dengan garis putus-putus merah dan tanda seru (`!`) terbukti memudahkan identifikasi anomali spasial secara transparan langsung pada peta satelit.
+
+4. **Generalisasi Skala Regional & Pemanfaatan Praktis**:
+   * Integrasi pendekatan biofisik dan segmentasi morfologi daratan-lautan berhasil mengeliminasi false-positive bangunan di garis pantai dan menjaga identifikasi danau pedalaman secara realistis pada skala Jawa Timur utuh.
+   * Hasil penelitian ini telah diimplementasikan dalam bentuk antarmuka web interaktif berbasis **Streamlit** dan dokumentasi **Jupyter Book**, yang siap dimanfaatkan sebagai alat bantu pemantauan tata ruang, analisis deforestasi, maupun inventarisasi sumber daya lahan regional.
+
+
