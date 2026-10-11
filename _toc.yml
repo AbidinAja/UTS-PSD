@@ -4,6 +4,16 @@
 format: jb-book
 root: intro
 chapters:
+- file: Tugas/polutan/polutan
+  sections:
+  - file: Tugas/polutan/bussiness-understanding
+  - file: Tugas/polutan/data-understanding
+  - file: Tugas/polutan/statistik
+  - file: Tugas/polutan/preprocessing
+  - file: Tugas/polutan/poly
+  - file: Tugas/polutan/kmeans
+  - file: Tugas/polutan/hitung
+  - file: Tugas/polutan/klasifikasi-sawah
 - file: Tugas/dataran/dataran
   sections:
   - file: Tugas/dataran/bussiness-understanding
@@ -11,4 +21,5 @@ chapters:
   - file: Tugas/dataran/data-preprocessing
   - file: Tugas/dataran/modeling
   - file: Tugas/dataran/visualisasi
+  - file: Tugas/dataran/deployment
 
