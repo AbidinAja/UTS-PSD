@@ -35,7 +35,7 @@ X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 ```
 
-### 5.1 Naive Bayes (Gaussian)
+### 3.1 Naive Bayes (Gaussian)
 Naive Bayes adalah algoritma berbasis probabilitas yang berasumsi bahwa setiap fitur independen satu sama lain.
 
 ```{code-cell} ipython3
@@ -51,7 +51,7 @@ print(f"Akurasi Keseluruhan : {accuracy_score(y_test, y_pred_nb)*100:.2f}%\\n")
 print(classification_report(y_test, y_pred_nb))
 ```
 
-### 5.2 K-Nearest Neighbors (KNN)
+### 3.2 K-Nearest Neighbors (KNN)
 KNN menentukan kelas lahan dengan cara mencari tetangga titik-titik data terdekat (kita gunakan nilai tetangga K=5).
 
 ```{code-cell} ipython3

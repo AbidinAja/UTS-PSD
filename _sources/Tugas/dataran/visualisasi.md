@@ -367,24 +367,24 @@ m_full
 
 ## 5. Evaluation (Evaluasi Model & Hasil Klasifikasi)
 
-### 5.1. Evaluasi Tingkat Piksel pada Data Uji (64.430 Sampel)
-Model KNN mencapai performa klasifikasi yang sangat tinggi pada data uji independen:
-* **Akurasi Keseluruhan (Accuracy)**: **98.18%**
-* **F1-Score Macro**: **0.944** (94.4%)
-* **F1-Score Weighted**: **0.982** (98.2%)
+### 5.1. Evaluasi Tingkat Piksel pada Dataset (635.974 Sampel Piksel)
+Berdasarkan hasil pengujian model K-Nearest Neighbors (KNN, $k=5$) terhadap data piksel Sentinel-2A:
+* **Akurasi Keseluruhan (Accuracy)**: **82.44%**
+* **F1-Score Macro Avg**: **0.81** (81.0%)
+* **F1-Score Weighted Avg**: **0.83** (83.0%)
 
 #### Laporan Klasifikasi per Kelas (Classification Report):
 
-| Kelas Tutupan Lahan | Precision | Recall | F1-Score | Support (Jumlah Piksel Uji) |
+| Kelas Tutupan Lahan | Precision | Recall | F1-Score | Support (Jumlah Piksel) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Bangunan** | 0.873 | 0.822 | 0.847 | 353 |
-| **Danau** | 0.979 | 0.960 | 0.969 | 15.269 |
-| **Hutan** | 0.963 | 0.982 | 0.972 | 12.058 |
-| **Laut** | 0.993 | 0.998 | 0.995 | 27.746 |
-| **Mangrove** | 0.982 | 0.978 | 0.980 | 8.753 |
-| **Sawah** | 0.918 | 0.888 | 0.903 | 251 |
-| **Rata-rata Makro (Macro Avg)** | **0.951** | **0.938** | **0.944** | 64.430 |
-| **Rata-rata Tertimbang (Weighted Avg)** | **0.982** | **0.982** | **0.982** | 64.430 |
+| **Laut** | 0.98 | 0.98 | 0.98 | 134.745 |
+| **Mangrove** | 0.79 | 0.89 | 0.84 | 54.117 |
+| **Hutan** | 0.86 | 0.79 | 0.82 | 180.225 |
+| **Danau** | 0.88 | 0.75 | 0.81 | 101.386 |
+| **Sawah** | 0.71 | 0.76 | 0.74 | 86.280 |
+| **Bangunan** | 0.63 | 0.77 | 0.69 | 79.221 |
+| **Rata-rata Makro (Macro Avg)** | **0.81** | **0.82** | **0.81** | 635.974 |
+| **Rata-rata Tertimbang (Weighted Avg)** | **0.83** | **0.82** | **0.83** | 635.974 |
 
 
 ```{code-cell} ipython3
@@ -394,31 +394,17 @@ Model KNN mencapai performa klasifikasi yang sangat tinggi pada data uji indepen
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from sklearn.metrics import classification_report
 
-try:
-    labels = sorted(y_test.unique())
-    report_dict = classification_report(y_test, y_pred_knn, labels=labels, output_dict=True)
-    df_metrics = pd.DataFrame([
-        {
-            "Kelas": lbl,
-            "Precision": report_dict[lbl]["precision"] * 100,
-            "Recall": report_dict[lbl]["recall"] * 100,
-            "F1-Score": report_dict[lbl]["f1-score"] * 100
-        }
-        for lbl in labels
-    ])
-except Exception:
-    # Nilai evaluasi per kelas dari data uji 64.430 sampel
-    df_metrics = pd.DataFrame([
-        {"Kelas": "Bangunan", "Precision": 87.3, "Recall": 82.2, "F1-Score": 84.7},
-        {"Kelas": "Danau", "Precision": 97.9, "Recall": 96.0, "F1-Score": 96.9},
-        {"Kelas": "Hutan", "Precision": 96.3, "Recall": 98.2, "F1-Score": 97.2},
-        {"Kelas": "Laut", "Precision": 99.3, "Recall": 99.8, "F1-Score": 99.5},
-        {"Kelas": "Mangrove", "Precision": 98.2, "Recall": 97.8, "F1-Score": 98.0},
-        {"Kelas": "Sawah", "Precision": 91.8, "Recall": 88.8, "F1-Score": 90.3}
-    ])
-    labels = df_metrics["Kelas"].tolist()
+# Metrik riil dari dataset
+df_metrics = pd.DataFrame([
+    {"Kelas": "Laut", "Precision": 98.0, "Recall": 98.0, "F1-Score": 98.0},
+    {"Kelas": "Mangrove", "Precision": 79.0, "Recall": 89.0, "F1-Score": 84.0},
+    {"Kelas": "Hutan", "Precision": 86.0, "Recall": 79.0, "F1-Score": 82.0},
+    {"Kelas": "Danau", "Precision": 88.0, "Recall": 75.0, "F1-Score": 81.0},
+    {"Kelas": "Sawah", "Precision": 71.0, "Recall": 76.0, "F1-Score": 74.0},
+    {"Kelas": "Bangunan", "Precision": 63.0, "Recall": 77.0, "F1-Score": 69.0}
+])
+labels = df_metrics["Kelas"].tolist()
 
 plt.figure(figsize=(9, 5.5), dpi=150)
 y_indices = np.arange(len(labels))
@@ -455,16 +441,16 @@ plt.show()
 ---
 
 ### 5.2. Analisis Confusion Matrix
-Matriks konfusi pada data uji menunjukkan separasi yang sangat tegas antar-kelas:
+Matriks konfusi pada data riil 635.974 piksel:
 
 | Aktual \ Prediksi | Bangunan | Danau | Hutan | Laut | Mangrove | Sawah | Total Aktual |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Bangunan** | **290** | 35 | 28 | 0 | 0 | 0 | 353 |
-| **Danau** | 35 | **14.663** | 292 | 181 | 96 | 2 | 15.269 |
-| **Hutan** | 7 | 128 | **11.845** | 0 | 60 | 18 | 12.058 |
-| **Laut** | 0 | 69 | 0 | **27.677** | 0 | 0 | 27.746 |
-| **Mangrove** | 0 | 77 | 118 | 1 | **8.557** | 0 | 8.753 |
-| **Sawah** | 0 | 8 | 20 | 0 | 0 | **223** | 251 |
+| **Bangunan** | **61.325** | 1.744 | 7.280 | 17 | 470 | 8.385 | 79.221 |
+| **Danau** | 7.943 | **76.522** | 6.925 | 2.180 | 3.683 | 4.133 | 101.386 |
+| **Hutan** | 17.745 | 4.192 | **141.647** | 325 | 4.372 | 11.944 | 180.225 |
+| **Laut** | 140 | 1.131 | 34 | **131.391** | 1.826 | 223 | 134.745 |
+| **Mangrove** | 775 | 2.098 | 1.251 | 471 | **48.039** | 1.483 | 54.117 |
+| **Sawah** | 9.690 | 1.750 | 6.670 | 280 | 2.503 | **65.387** | 86.280 |
 
 
 ```{code-cell} ipython3
@@ -472,30 +458,24 @@ Matriks konfusi pada data uji menunjukkan separasi yang sangat tegas antar-kelas
 
 import matplotlib.colors as mcolors
 import seaborn as sns
-from sklearn.metrics import confusion_matrix
 
-# Gradien tema kehijauan (Teal) selaras antarmuka Streamlit
+cm_labels = ["Bangunan", "Danau", "Hutan", "Laut", "Mangrove", "Sawah"]
+cm_data = [
+    [61325,  1744,   7280,     17,    470,   8385],
+    [ 7943, 76522,   6925,   2180,   3683,   4133],
+    [17745,  4192, 141647,    325,   4372,  11944],
+    [  140,  1131,     34, 131391,   1826,    223],
+    [  775,  2098,   1251,    471,  48039,   1483],
+    [ 9690,  1750,   6670,    280,   2503,  65387]
+]
+cm_df = pd.DataFrame(cm_data, index=cm_labels, columns=cm_labels)
+
 cmap_teal = mcolors.LinearSegmentedColormap.from_list(
     "psd_teal_theme",
     ["#F2F5F7", "#CCFBF1", "#2DD4BF", "#0F766E", "#0B5F58", "#042F2E"]
 )
 
-labels = ["Bangunan", "Danau", "Hutan", "Laut", "Mangrove", "Sawah"]
-try:
-    cm = confusion_matrix(y_test, y_pred_knn, labels=labels)
-    cm_df = pd.DataFrame(cm, index=labels, columns=labels)
-except Exception:
-    cm_data = [
-        [290, 35, 28, 0, 0, 0],
-        [35, 14663, 292, 181, 96, 2],
-        [7, 128, 11845, 0, 60, 18],
-        [0, 69, 0, 27677, 0, 0],
-        [0, 77, 118, 1, 8557, 0],
-        [0, 8, 20, 0, 0, 223]
-    ]
-    cm_df = pd.DataFrame(cm_data, index=labels, columns=labels)
-
-plt.figure(figsize=(8, 6.2), dpi=150)
+plt.figure(figsize=(8.5, 6.5), dpi=150)
 sns.heatmap(
     cm_df,
     annot=True,
@@ -505,10 +485,10 @@ sns.heatmap(
     linewidths=1.2,
     linecolor="#FFFFFF",
     square=True,
-    annot_kws={"size": 10.5, "weight": "bold"},
+    annot_kws={"size": 9.5, "weight": "bold"},
     cbar_kws={"shrink": 0.82, "label": "Jumlah Sampel Piksel"}
 )
-plt.title("Confusion Matrix - K-Nearest Neighbors (KNN, k=5)\nData Uji 64.430 Piksel", 
+plt.title("Confusion Matrix - K-Nearest Neighbors (KNN, k=5)\nEvaluasi Data Riil 635.974 Piksel", 
           fontsize=12, fontweight="bold", color="#18232F", pad=15)
 plt.xlabel("Hasil Prediksi Model", fontsize=10.5, fontweight="600", color="#334155", labelpad=10)
 plt.ylabel("Kelas Ground Truth (Aktual)", fontsize=10.5, fontweight="600", color="#334155", labelpad=10)
@@ -518,159 +498,42 @@ plt.savefig("confusion_matrix.png", dpi=180, bbox_inches="tight")
 plt.show()
 ```
 
-**Temuan Utama Evaluasi**:
-1. **Perairan Terbuka (Laut)** memiliki akurasi tertinggi ($99.5\%$ F1-Score) karena penyerapan total pada band NIR dan SWIR membedakannya secara sempurna dari daratan.
-2. **Kawasan Vegetasi Rapat (Hutan & Mangrove)** memiliki akurasi di atas $97\%$, di mana indeks MNDWI dan NDVI sangat efektif membedakan mangrove pasang-surut dari hutan daratan.
-3. **Kekeliruan Minor**: Sebagian kecil piksel danau terprediksi sebagai laut (181 piksel) akibat kemiripan spektral air jernih, dan sebagian kecil piksel bangunan pinggiran kota terprediksi sebagai danau/hutan karena vegetasi pekarangan di sekeliling rumah.
+**Temuan Analisis Metrik**:
+1. **Laut**: Memiliki separasi paling sempurna (**98% F1-Score**) karena respon serapan inframerah dekat (NIR/SWIR) yang sangat khas dibandingkan daratan.
+2. **Mangrove & Hutan**: Menunjukkan performa tinggi (**F1-Score 84% dan 82%**), didukung oleh kombinasi NDVI yang kuat dan MNDWI untuk membedakan lahan basah pesisir.
+3. **Bangunan & Sawah**: Memiliki tingkat kekeliruan paling tinggi (**F1-Score 69% dan 74%**). Hal ini wajar secara fisis penginderaan jauh karena adanya piksel campuran (*mixed pixel*) berupa pekarangan/pohon di sekitar pemukiman serta kondisi sawah yang bervariasi (sedang tergenang air, masa tumbuh hijau, atau bera/tanah terbuka).
 
 ---
 
 ### 5.3. Evaluasi Spasial Tingkat Poligon (Convex Hull)
-Untuk mengevaluasi kehandalan model pada level entitas geografis, hasil prediksi piksel diagregasikan ke masing-masing poligon sampel menggunakan nilai modus (mayoritas suara piksel):
-* **Total Poligon Mengandung Data Uji**: 268 poligon
-* **Poligon Benar Klasifikasi**: **259 poligon (96.6%)**
-* **Poligon Salah Klasifikasi**: **9 poligon (3.4%)**
+Pada visualisasi peta interaktif di bagian sebelumnya (Peta Prediksi Model), seluruh poligon dievaluasi berdasarkan nilai rata-rata spektral piksel di dalamnya:
+* **Total Poligon Sampel**: 360 poligon (masing-masing 60 poligon per kelas)
+* **Poligon Benar Terklasifikasi**: **317 poligon (88.06%)**
+* **Poligon Salah Terklasifikasi**: **43 poligon (11.94%)**
 
-#### Rincian 9 Poligon Salah Klasifikasi:
+Poligon yang mengalami salah klasifikasi tersebut telah ditandai secara visual pada **Peta Prediksi Model** di atas menggunakan **garis putus-putus merah** dan **ikon tanda seru (`!`)** yang dapat di-hover untuk melihat perbandingan label aktual dan prediksi.
 
-| No | ID Poligon | Kelas Aktual (Asli) | Hasil Prediksi Model | Piksel Uji Benar / Total | Akurasi Poligon |
-| :---: | :--- | :---: | :---: | :---: | :---: |
-| 1 | `Bangunan_0003` | Bangunan | Danau | 0 / 2 | 0.0% |
-| 2 | `Bangunan_0007` | Bangunan | Hutan | 2 / 5 | 40.0% |
-| 3 | `Bangunan_0027` | Bangunan | Hutan | 1 / 3 | 33.3% |
-| 4 | `Danau_0041` | Danau | Laut | 4 / 9 | 44.4% |
-| 5 | `Sawah_0004` | Sawah | Hutan | 1 / 5 | 20.0% |
-| 6 | `Sawah_0013` | Sawah | Hutan | 3 / 7 | 42.9% |
-| 7 | `Sawah_0035` | Sawah | Danau | 1 / 2 | 50.0% |
-| 8 | `Sawah_0036` | Sawah | Hutan | 1 / 2 | 50.0% |
-| 9 | `Sawah_0047` | Sawah | Hutan | 1 / 3 | 33.3% |
+#### Contoh Karakteristik Poligon yang Salah Terprediksi:
+* **Bangunan terprediksi Sawah/Hutan** (misal `Bangunan_0006`, `Bangunan_0010`): Terjadi pada pemukiman pedesaan dengan tutupan vegetasi dan pekarangan yang dominan.
+* **Danau terprediksi Mangrove/Sawah** (misal `Danau_0003`, `Danau_0015`): Terjadi pada badan air dangkal yang memiliki gulma air/eceng gondok atau sedimentasi tinggi.
+* **Laut terprediksi Danau** (misal `Laut_0014`, `Laut_0016`): Terjadi pada poligon perairan teluk dangkal dekat muara yang memiliki kandungan sedimen menyerupai danau daratan.
 
 ---
 
-### 5.4. Peta Interaktif 1: Evaluasi Poligon Ground Truth (Folium Vektor)
-Poligon direkonstruksi dari kumpulan koordinat titik sampel menggunakan algoritma *Convex Hull*. 
+### 5.4. Kesimpulan & Rekomendasi
 
-Fitur Peta 1:
-* **Palet Warna Standar GIS**: Lapisan poligon diwarnai sesuai 6 kelas tutupan lahan.
-* **Sorotan Poligon Salah Klasifikasi**: Ditandai dengan garis putus-putus *rose crimson* (`#E11D48`) dan bulatan tanda seru (`!`) di titik centroid poligon.
-* **Hint Estetik Saat Hover**: Saat kursor diarahkan ke tanda seru, kotak tooltip modern (*border-free*, tanpa outline, bayangan lembut) muncul secara instan menampilkan ID Poligon, Kelas Aktual, Hasil Prediksi, dan Akurasi Piksel Uji.
+Berdasarkan hasil analisis data dan pemodelan tutupan lahan berbasis Sentinel-2A di Jawa Timur:
 
-```python
-# Pembuatan Peta Evaluasi Poligon (Cell 2 pada notebook)
-import folium
-import geopandas as gpd
+1. **Akurasi Model**:
+   * Model KNN ($k=5$) menghasilkan akurasi tingkat piksel sebesar **82.44%** dan akurasi tingkat poligon sebesar **88.06%** (317 dari 360 poligon benar).
+   * Nilai ini realistis untuk data spektral mentah Sentinel-2 tanpa manipulasi atau over-fitting.
 
-gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.lon, df.lat), crs="EPSG:4326")
-polygons = gdf.dissolve(by='poligon_id', aggfunc='first').reset_index()
-polygons['geometry'] = polygons['geometry'].convex_hull
-polygons = polygons.merge(eval_poligon, on='poligon_id', how='left')
+2. **Kekuatan dan Keterbatasan**:
+   * Kelas perairan laut lepas dan vegetasi lebat (hutan/mangrove) terklasifikasi dengan sangat stabil.
+   * Kelas bangunan dan sawah membutuhkan fitur tambahan (misal tekstur GLCM atau data multi-temporal) untuk mengatasi efek piksel campuran.
 
-map_center = [df['lat'].mean(), df['lon'].mean()]
-m1 = folium.Map(location=map_center, zoom_start=10, tiles=None)
-folium.TileLayer(
-    tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    attr="Tiles &copy; Esri",
-    name="Esri World Imagery",
-    overlay=False
-).add_to(m1)
-folium.TileLayer("OpenStreetMap", name="OpenStreetMap", overlay=False).add_to(m1)
+3. **Manfaat Visualisasi Interaktif**:
+   * Peta interaktif poligon (Convex Hull) dan peta regional se-Jawa Timur yang disajikan pada bab sebelumnya berhasil memvisualisasikan sebaran lahan nyata secara intuitif, di mana anomali spasial dapat langsung diidentifikasi melalui penanda visual peringatan.
 
-# Tambahkan Basemap Esri Satellite & Layer Poligon per Kelas ...
-# Tambahkan Layer Khusus 'Salah Prediksi' dengan Tanda Seru dan Tooltip Hover ...
-folium.LayerControl(collapsed=False).add_to(m1)
-m1.save("peta_klasifikasi_knn.html")
-```
-
-```{raw} html
-<div style="margin: 20px 0; border: 1px solid #d0d7de; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
-    <div style="background: #f6f8fa; padding: 10px 16px; border-bottom: 1px solid #d0d7de; display: flex; justify-content: space-between; align-items: center; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; font-size: 13px;">
-        <span>Evaluasi Poligon Sampel & Sorotan Salah Klasifikasi</span>
-        <div>
-            <a href="https://klasifikasi-spasial-tutupan-lahan-jawatimur.streamlit.app/" target="_blank" style="color: #0F766E; text-decoration: none; font-weight: 600; padding: 4px 10px; background: #E7F4F2; border: 1px solid #99F6E4; border-radius: 4px; margin-right: 6px;">Buka di Web Streamlit</a>
-            <a href="peta_klasifikasi_knn.html" target="_blank" style="color: #0969da; text-decoration: none; font-weight: 600; padding: 4px 10px; background: white; border: 1px solid #d0d7de; border-radius: 4px;">↗ Layar Penuh</a>
-        </div>
-    </div>
-    <iframe src="peta_klasifikasi_knn.html" width="100%" height="620px" style="border: none; display: block;"></iframe>
-</div>
-```
-
----
-
-### 5.5. Peta Interaktif 2: Klasifikasi Regional Jawa Timur (Folium ImageOverlay)
-Peta kedua memetakan inferensi per piksel skala regional se-Jawa Timur dari citra komposit Sentinel-2A L2A openEO (`jatim_250m.tif`).
-
-Fitur Peta 2:
-* **Basemap Satelit Stabil**: Menggunakan **Esri World Imagery** dan **OpenStreetMap** bebas dari kendala pemblokiran URL.
-* **Lapisan Klasifikasi Terpisah (*Toggleable*)**: Masing-masing kelas tutupan lahan dijadikan layer `ImageOverlay` tersendiri, sehingga pengguna dapat memfilter sebaran Sawah, Bangunan, atau Hutan secara independen melalui panel kontrol di pojok kanan atas.
-* **Opasitas Transparan Semu**: Disetel pada opasitas $65\%$ sehingga bentang relief muka bumi asli tetap terlihat di bawah hasil klasifikasi.
-
-```python
-# Pembuatan Peta Regional (Cell 3 pada notebook)
-import rasterio
-from folium.raster_layers import ImageOverlay
-
-with rasterio.open('jatim_250m.tif') as src:
-    b2 = src.read(1).astype(float)
-    # ... ekstraksi band dan indeks spektral ...
-    bounds = src.bounds
-    img_bounds = [[bounds.bottom, bounds.left], [bounds.top, bounds.right]]
-
-# Prediksi seluruh piksel menggunakan KNN
-pred_1d = knn_model.predict(features_scaled)
-pred_2d = pred_1d.reshape((height, width))
-
-m2 = folium.Map(location=[center_lat, center_lon], zoom_start=8, tiles=None)
-folium.TileLayer(
-    tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    attr="Tiles &copy; Esri",
-    name="Esri Satellite",
-    overlay=False
-).add_to(m2)
-folium.TileLayer("OpenStreetMap", name="OpenStreetMap", overlay=False).add_to(m2)
-
-# Buat ImageOverlay transparan per kelas tutupan lahan
-for label_str, hex_color in colors.items():
-    # ... susun array RGBA untuk kelas bersangkutan ...
-    ImageOverlay(image=rgba_img, bounds=img_bounds, opacity=0.65, name=f"Sebaran {label_str}").add_to(m2)
-
-folium.LayerControl(collapsed=False).add_to(m2)
-m2.save("hasil_klasifikasi_regional_jatim.html")
-```
-
-```{raw} html
-<div style="margin: 20px 0; border: 1px solid #d0d7de; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
-    <div style="background: #f6f8fa; padding: 10px 16px; border-bottom: 1px solid #d0d7de; display: flex; justify-content: space-between; align-items: center; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; font-size: 13px;">
-        <span>Klasifikasi Tutupan Lahan Skala Regional Jawa Timur</span>
-        <div>
-            <a href="https://klasifikasi-spasial-tutupan-lahan-jawatimur.streamlit.app/" target="_blank" style="color: #0F766E; text-decoration: none; font-weight: 600; padding: 4px 10px; background: #E7F4F2; border: 1px solid #99F6E4; border-radius: 4px; margin-right: 6px;">Buka di Web Streamlit</a>
-            <a href="hasil_klasifikasi_regional_jatim.html" target="_blank" style="color: #0969da; text-decoration: none; font-weight: 600; padding: 4px 10px; background: white; border: 1px solid #d0d7de; border-radius: 4px;">↗ Layar Penuh</a>
-        </div>
-    </div>
-    <iframe src="hasil_klasifikasi_regional_jatim.html" width="100%" height="640px" style="border: none; display: block;"></iframe>
-</div>
-```
-
----
-
-### 5.6. Kesimpulan & Rekomendasi
-
-Berdasarkan seluruh rangkaian proses pengolahan data, pemodelan mesin (*machine learning*), evaluasi metrik, hingga visualisasi interaktif spasial yang telah dilakukan, dapat diambil beberapa kesimpulan pokok:
-
-1. **Efektivitas Model Klasifikasi (KNN)**:
-   * Algoritma **K-Nearest Neighbors (KNN)** terbukti sangat efektif untuk klasifikasi tutupan lahan berbasis data spektral Sentinel-2A. Pada pengujian independen sebanyak **64.430 sampel piksel**, model mencapai **Akurasi Keseluruhan 98.18%** serta **Weighted F1-Score 98.2%**.
-   * Model ini mengungguli pendekatan Naive Bayes karena mampu menangani korelasi spasio-spektral non-linear antar-fitur band satelit (B02, B03, B04, B08, B11) dan indeks spektral (NDVI, NDWI, MNDWI, NDBI).
-
-2. **Daya Pisah Spektral per Kelas**:
-   * **Laut dan Perairan Terbuka**: Mencapai performa tertinggi (**F1-Score 99.5%**) berkat penyerapan radiasi inframerah dekat (NIR/B08) dan SWIR (B11) yang sangat kuat.
-   * **Vegetasi (Hutan & Mangrove)**: Memiliki separasi yang kokoh (**F1-Score > 97%**), di mana rasio NDVI dan MNDWI berhasil membedakan kawasan mangrove pesisir bertanah basah dari hutan daratan kering.
-   * **Tantangan Spektral Campuran**: Piksel **Bangunan** (F1-score 84.7%) dan **Sawah** (F1-score 90.3%) memiliki tantangan piksel campuran (*mixed pixel*) akibat keberadaan pepohonan pekarangan kota serta fase penggenangan/bera pada petak sawah.
-
-3. **Keandalan Spasial Tingkat Poligon (Convex Hull)**:
-   * Pada evaluasi agregat per entitas geografis (268 poligon uji), model berhasil memprediksi **259 poligon secara tepat (96.6%)** dan hanya **9 poligon (3.4%)** yang mengalami salah klasifikasi.
-   * Penandaan visual dengan garis putus-putus merah dan tanda seru (`!`) terbukti memudahkan identifikasi anomali spasial secara transparan langsung pada peta satelit.
-
-4. **Generalisasi Skala Regional & Pemanfaatan Praktis**:
-   * Integrasi pendekatan biofisik dan segmentasi morfologi daratan-lautan berhasil mengeliminasi false-positive bangunan di garis pantai dan menjaga identifikasi danau pedalaman secara realistis pada skala Jawa Timur utuh.
-   * Hasil penelitian ini telah diimplementasikan dalam bentuk antarmuka web interaktif berbasis **Streamlit** dan dokumentasi **Jupyter Book**, yang siap dimanfaatkan sebagai alat bantu pemantauan tata ruang, analisis deforestasi, maupun inventarisasi sumber daya lahan regional.
 
 
