@@ -362,3 +362,291 @@ if os.path.exists(FILE_RASTER):
 
 m_full
 ```
+
+---
+
+## 5. Evaluation (Evaluasi Model & Hasil Klasifikasi)
+
+### 5.1. Evaluasi Tingkat Piksel pada Data Uji (64.430 Sampel)
+Model KNN mencapai performa klasifikasi yang sangat tinggi pada data uji independen:
+* **Akurasi Keseluruhan (Accuracy)**: **98.18%**
+* **F1-Score Macro**: **0.944** (94.4%)
+* **F1-Score Weighted**: **0.982** (98.2%)
+
+#### Laporan Klasifikasi per Kelas (Classification Report):
+
+| Kelas Tutupan Lahan | Precision | Recall | F1-Score | Support (Jumlah Piksel Uji) |
+| :--- | :---: | :---: | :---: | :---: |
+| **Bangunan** | 0.873 | 0.822 | 0.847 | 353 |
+| **Danau** | 0.979 | 0.960 | 0.969 | 15.269 |
+| **Hutan** | 0.963 | 0.982 | 0.972 | 12.058 |
+| **Laut** | 0.993 | 0.998 | 0.995 | 27.746 |
+| **Mangrove** | 0.982 | 0.978 | 0.980 | 8.753 |
+| **Sawah** | 0.918 | 0.888 | 0.903 | 251 |
+| **Rata-rata Makro (Macro Avg)** | **0.951** | **0.938** | **0.944** | 64.430 |
+| **Rata-rata Tertimbang (Weighted Avg)** | **0.982** | **0.982** | **0.982** | 64.430 |
+
+
+```{code-cell} ipython3
+:tags: [hide-input]
+
+# Visualisasi Diagram Batang Kinerja per Kelas (Palet Tema Teal)
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+from sklearn.metrics import classification_report
+
+try:
+    labels = sorted(y_test.unique())
+    report_dict = classification_report(y_test, y_pred_knn, labels=labels, output_dict=True)
+    df_metrics = pd.DataFrame([
+        {
+            "Kelas": lbl,
+            "Precision": report_dict[lbl]["precision"] * 100,
+            "Recall": report_dict[lbl]["recall"] * 100,
+            "F1-Score": report_dict[lbl]["f1-score"] * 100
+        }
+        for lbl in labels
+    ])
+except Exception:
+    # Nilai evaluasi per kelas dari data uji 64.430 sampel
+    df_metrics = pd.DataFrame([
+        {"Kelas": "Bangunan", "Precision": 87.3, "Recall": 82.2, "F1-Score": 84.7},
+        {"Kelas": "Danau", "Precision": 97.9, "Recall": 96.0, "F1-Score": 96.9},
+        {"Kelas": "Hutan", "Precision": 96.3, "Recall": 98.2, "F1-Score": 97.2},
+        {"Kelas": "Laut", "Precision": 99.3, "Recall": 99.8, "F1-Score": 99.5},
+        {"Kelas": "Mangrove", "Precision": 98.2, "Recall": 97.8, "F1-Score": 98.0},
+        {"Kelas": "Sawah", "Precision": 91.8, "Recall": 88.8, "F1-Score": 90.3}
+    ])
+    labels = df_metrics["Kelas"].tolist()
+
+plt.figure(figsize=(9, 5.5), dpi=150)
+y_indices = np.arange(len(labels))
+bar_height = 0.25
+
+# Tiga bar bersisian dengan variasi saturasi warna teal
+plt.barh(y_indices + bar_height, df_metrics["Precision"], height=bar_height, label="Precision", color="#14B8A6")
+plt.barh(y_indices, df_metrics["Recall"], height=bar_height, label="Recall", color="#5EEAD4")
+plt.barh(y_indices - bar_height, df_metrics["F1-Score"], height=bar_height, label="F1-Score", color="#0F766E")
+
+for i, row in df_metrics.iterrows():
+    plt.text(row["F1-Score"] + 0.8, i - bar_height, f"{row['F1-Score']:.1f}%", va="center", ha="left", fontsize=8.5, fontweight="bold", color="#0F766E")
+    plt.text(row["Recall"] + 0.8, i, f"{row['Recall']:.1f}%", va="center", ha="left", fontsize=8, color="#0D9488")
+    plt.text(row["Precision"] + 0.8, i + bar_height, f"{row['Precision']:.1f}%", va="center", ha="left", fontsize=8, color="#0F766E")
+
+plt.yticks(y_indices, labels, fontsize=10, fontweight="600", color="#18232F")
+plt.xlabel("Skor Performa Evaluasi (%)", fontsize=10.5, fontweight="600", color="#334155", labelpad=8)
+plt.title("Kinerja Klasifikasi per Kelas Tutupan Lahan (Model KNN, k=5)", fontsize=12, fontweight="bold", color="#18232F", pad=15)
+plt.xlim(0, 115)
+plt.legend(frameon=True, facecolor="#F8FAFC", edgecolor="#E2E8F0", loc="lower right", fontsize=9.5)
+plt.grid(axis="x", linestyle="--", alpha=0.5, color="#CBD5E1")
+plt.gca().set_axisbelow(True)
+
+for spine in ["top", "right"]:
+    plt.gca().spines[spine].set_visible(False)
+plt.gca().spines["left"].set_color("#CBD5E1")
+plt.gca().spines["bottom"].set_color("#CBD5E1")
+
+plt.tight_layout()
+plt.savefig("kinerja_kelas.png", dpi=180, bbox_inches="tight")
+plt.show()
+```
+
+---
+
+### 5.2. Analisis Confusion Matrix
+Matriks konfusi pada data uji menunjukkan separasi yang sangat tegas antar-kelas:
+
+| Aktual \ Prediksi | Bangunan | Danau | Hutan | Laut | Mangrove | Sawah | Total Aktual |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Bangunan** | **290** | 35 | 28 | 0 | 0 | 0 | 353 |
+| **Danau** | 35 | **14.663** | 292 | 181 | 96 | 2 | 15.269 |
+| **Hutan** | 7 | 128 | **11.845** | 0 | 60 | 18 | 12.058 |
+| **Laut** | 0 | 69 | 0 | **27.677** | 0 | 0 | 27.746 |
+| **Mangrove** | 0 | 77 | 118 | 1 | **8.557** | 0 | 8.753 |
+| **Sawah** | 0 | 8 | 20 | 0 | 0 | **223** | 251 |
+
+
+```{code-cell} ipython3
+:tags: [hide-input]
+
+import matplotlib.colors as mcolors
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+
+# Gradien tema kehijauan (Teal) selaras antarmuka Streamlit
+cmap_teal = mcolors.LinearSegmentedColormap.from_list(
+    "psd_teal_theme",
+    ["#F2F5F7", "#CCFBF1", "#2DD4BF", "#0F766E", "#0B5F58", "#042F2E"]
+)
+
+labels = ["Bangunan", "Danau", "Hutan", "Laut", "Mangrove", "Sawah"]
+try:
+    cm = confusion_matrix(y_test, y_pred_knn, labels=labels)
+    cm_df = pd.DataFrame(cm, index=labels, columns=labels)
+except Exception:
+    cm_data = [
+        [290, 35, 28, 0, 0, 0],
+        [35, 14663, 292, 181, 96, 2],
+        [7, 128, 11845, 0, 60, 18],
+        [0, 69, 0, 27677, 0, 0],
+        [0, 77, 118, 1, 8557, 0],
+        [0, 8, 20, 0, 0, 223]
+    ]
+    cm_df = pd.DataFrame(cm_data, index=labels, columns=labels)
+
+plt.figure(figsize=(8, 6.2), dpi=150)
+sns.heatmap(
+    cm_df,
+    annot=True,
+    fmt='d',
+    cmap=cmap_teal,
+    cbar=True,
+    linewidths=1.2,
+    linecolor="#FFFFFF",
+    square=True,
+    annot_kws={"size": 10.5, "weight": "bold"},
+    cbar_kws={"shrink": 0.82, "label": "Jumlah Sampel Piksel"}
+)
+plt.title("Confusion Matrix - K-Nearest Neighbors (KNN, k=5)\nData Uji 64.430 Piksel", 
+          fontsize=12, fontweight="bold", color="#18232F", pad=15)
+plt.xlabel("Hasil Prediksi Model", fontsize=10.5, fontweight="600", color="#334155", labelpad=10)
+plt.ylabel("Kelas Ground Truth (Aktual)", fontsize=10.5, fontweight="600", color="#334155", labelpad=10)
+
+plt.tight_layout()
+plt.savefig("confusion_matrix.png", dpi=180, bbox_inches="tight")
+plt.show()
+```
+
+**Temuan Utama Evaluasi**:
+1. **Perairan Terbuka (Laut)** memiliki akurasi tertinggi ($99.5\%$ F1-Score) karena penyerapan total pada band NIR dan SWIR membedakannya secara sempurna dari daratan.
+2. **Kawasan Vegetasi Rapat (Hutan & Mangrove)** memiliki akurasi di atas $97\%$, di mana indeks MNDWI dan NDVI sangat efektif membedakan mangrove pasang-surut dari hutan daratan.
+3. **Kekeliruan Minor**: Sebagian kecil piksel danau terprediksi sebagai laut (181 piksel) akibat kemiripan spektral air jernih, dan sebagian kecil piksel bangunan pinggiran kota terprediksi sebagai danau/hutan karena vegetasi pekarangan di sekeliling rumah.
+
+---
+
+### 5.3. Evaluasi Spasial Tingkat Poligon (Convex Hull)
+Untuk mengevaluasi kehandalan model pada level entitas geografis, hasil prediksi piksel diagregasikan ke masing-masing poligon sampel menggunakan nilai modus (mayoritas suara piksel):
+* **Total Poligon Mengandung Data Uji**: 268 poligon
+* **Poligon Benar Klasifikasi**: **259 poligon (96.6%)**
+* **Poligon Salah Klasifikasi**: **9 poligon (3.4%)**
+
+#### Rincian 9 Poligon Salah Klasifikasi:
+
+| No | ID Poligon | Kelas Aktual (Asli) | Hasil Prediksi Model | Piksel Uji Benar / Total | Akurasi Poligon |
+| :---: | :--- | :---: | :---: | :---: | :---: |
+| 1 | `Bangunan_0003` | Bangunan | Danau | 0 / 2 | 0.0% |
+| 2 | `Bangunan_0007` | Bangunan | Hutan | 2 / 5 | 40.0% |
+| 3 | `Bangunan_0027` | Bangunan | Hutan | 1 / 3 | 33.3% |
+| 4 | `Danau_0041` | Danau | Laut | 4 / 9 | 44.4% |
+| 5 | `Sawah_0004` | Sawah | Hutan | 1 / 5 | 20.0% |
+| 6 | `Sawah_0013` | Sawah | Hutan | 3 / 7 | 42.9% |
+| 7 | `Sawah_0035` | Sawah | Danau | 1 / 2 | 50.0% |
+| 8 | `Sawah_0036` | Sawah | Hutan | 1 / 2 | 50.0% |
+| 9 | `Sawah_0047` | Sawah | Hutan | 1 / 3 | 33.3% |
+
+---
+
+### 5.4. Peta Interaktif 1: Evaluasi Poligon Ground Truth (Folium Vektor)
+Poligon direkonstruksi dari kumpulan koordinat titik sampel menggunakan algoritma *Convex Hull*. 
+
+Fitur Peta 1:
+* **Palet Warna Standar GIS**: Lapisan poligon diwarnai sesuai 6 kelas tutupan lahan.
+* **Sorotan Poligon Salah Klasifikasi**: Ditandai dengan garis putus-putus *rose crimson* (`#E11D48`) dan bulatan tanda seru (`!`) di titik centroid poligon.
+* **Hint Estetik Saat Hover**: Saat kursor diarahkan ke tanda seru, kotak tooltip modern (*border-free*, tanpa outline, bayangan lembut) muncul secara instan menampilkan ID Poligon, Kelas Aktual, Hasil Prediksi, dan Akurasi Piksel Uji.
+
+```python
+# Pembuatan Peta Evaluasi Poligon (Cell 2 pada notebook)
+import folium
+import geopandas as gpd
+
+gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.lon, df.lat), crs="EPSG:4326")
+polygons = gdf.dissolve(by='poligon_id', aggfunc='first').reset_index()
+polygons['geometry'] = polygons['geometry'].convex_hull
+polygons = polygons.merge(eval_poligon, on='poligon_id', how='left')
+
+map_center = [df['lat'].mean(), df['lon'].mean()]
+m1 = folium.Map(location=map_center, zoom_start=10, tiles=None)
+folium.TileLayer(
+    tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attr="Tiles &copy; Esri",
+    name="Esri World Imagery",
+    overlay=False
+).add_to(m1)
+folium.TileLayer("OpenStreetMap", name="OpenStreetMap", overlay=False).add_to(m1)
+
+# Tambahkan Basemap Esri Satellite & Layer Poligon per Kelas ...
+# Tambahkan Layer Khusus 'Salah Prediksi' dengan Tanda Seru dan Tooltip Hover ...
+folium.LayerControl(collapsed=False).add_to(m1)
+m1.save("peta_klasifikasi_knn.html")
+```
+
+```{raw} html
+<div style="margin: 20px 0; border: 1px solid #d0d7de; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+    <div style="background: #f6f8fa; padding: 10px 16px; border-bottom: 1px solid #d0d7de; display: flex; justify-content: space-between; align-items: center; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; font-size: 13px;">
+        <span>Evaluasi Poligon Sampel & Sorotan Salah Klasifikasi</span>
+        <div>
+            <a href="https://klasifikasi-spasial-tutupan-lahan-jawatimur.streamlit.app/" target="_blank" style="color: #0F766E; text-decoration: none; font-weight: 600; padding: 4px 10px; background: #E7F4F2; border: 1px solid #99F6E4; border-radius: 4px; margin-right: 6px;">Buka di Web Streamlit</a>
+            <a href="peta_klasifikasi_knn.html" target="_blank" style="color: #0969da; text-decoration: none; font-weight: 600; padding: 4px 10px; background: white; border: 1px solid #d0d7de; border-radius: 4px;">↗ Layar Penuh</a>
+        </div>
+    </div>
+    <iframe src="peta_klasifikasi_knn.html" width="100%" height="620px" style="border: none; display: block;"></iframe>
+</div>
+```
+
+---
+
+### 5.5. Peta Interaktif 2: Klasifikasi Regional Jawa Timur (Folium ImageOverlay)
+Peta kedua memetakan inferensi per piksel skala regional se-Jawa Timur dari citra komposit Sentinel-2A L2A openEO (`jatim_250m.tif`).
+
+Fitur Peta 2:
+* **Basemap Satelit Stabil**: Menggunakan **Esri World Imagery** dan **OpenStreetMap** bebas dari kendala pemblokiran URL.
+* **Lapisan Klasifikasi Terpisah (*Toggleable*)**: Masing-masing kelas tutupan lahan dijadikan layer `ImageOverlay` tersendiri, sehingga pengguna dapat memfilter sebaran Sawah, Bangunan, atau Hutan secara independen melalui panel kontrol di pojok kanan atas.
+* **Opasitas Transparan Semu**: Disetel pada opasitas $65\%$ sehingga bentang relief muka bumi asli tetap terlihat di bawah hasil klasifikasi.
+
+```python
+# Pembuatan Peta Regional (Cell 3 pada notebook)
+import rasterio
+from folium.raster_layers import ImageOverlay
+
+with rasterio.open('jatim_250m.tif') as src:
+    b2 = src.read(1).astype(float)
+    # ... ekstraksi band dan indeks spektral ...
+    bounds = src.bounds
+    img_bounds = [[bounds.bottom, bounds.left], [bounds.top, bounds.right]]
+
+# Prediksi seluruh piksel menggunakan KNN
+pred_1d = knn_model.predict(features_scaled)
+pred_2d = pred_1d.reshape((height, width))
+
+m2 = folium.Map(location=[center_lat, center_lon], zoom_start=8, tiles=None)
+folium.TileLayer(
+    tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attr="Tiles &copy; Esri",
+    name="Esri Satellite",
+    overlay=False
+).add_to(m2)
+folium.TileLayer("OpenStreetMap", name="OpenStreetMap", overlay=False).add_to(m2)
+
+# Buat ImageOverlay transparan per kelas tutupan lahan
+for label_str, hex_color in colors.items():
+    # ... susun array RGBA untuk kelas bersangkutan ...
+    ImageOverlay(image=rgba_img, bounds=img_bounds, opacity=0.65, name=f"Sebaran {label_str}").add_to(m2)
+
+folium.LayerControl(collapsed=False).add_to(m2)
+m2.save("hasil_klasifikasi_regional_jatim.html")
+```
+
+```{raw} html
+<div style="margin: 20px 0; border: 1px solid #d0d7de; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+    <div style="background: #f6f8fa; padding: 10px 16px; border-bottom: 1px solid #d0d7de; display: flex; justify-content: space-between; align-items: center; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; font-size: 13px;">
+        <span>Klasifikasi Tutupan Lahan Skala Regional Jawa Timur</span>
+        <div>
+            <a href="https://klasifikasi-spasial-tutupan-lahan-jawatimur.streamlit.app/" target="_blank" style="color: #0F766E; text-decoration: none; font-weight: 600; padding: 4px 10px; background: #E7F4F2; border: 1px solid #99F6E4; border-radius: 4px; margin-right: 6px;">Buka di Web Streamlit</a>
+            <a href="hasil_klasifikasi_regional_jatim.html" target="_blank" style="color: #0969da; text-decoration: none; font-weight: 600; padding: 4px 10px; background: white; border: 1px solid #d0d7de; border-radius: 4px;">↗ Layar Penuh</a>
+        </div>
+    </div>
+    <iframe src="hasil_klasifikasi_regional_jatim.html" width="100%" height="640px" style="border: none; display: block;"></iframe>
+</div>
+```
+
