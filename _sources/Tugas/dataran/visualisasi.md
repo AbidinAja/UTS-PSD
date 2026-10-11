@@ -367,24 +367,24 @@ m_full
 
 ## 5. Evaluation (Evaluasi Model & Hasil Klasifikasi)
 
-### 5.1. Evaluasi Tingkat Piksel pada Dataset (635.974 Sampel Piksel)
-Berdasarkan hasil pengujian model K-Nearest Neighbors (KNN, $k=5$) terhadap data piksel Sentinel-2A:
-* **Akurasi Keseluruhan (Accuracy)**: **82.44%**
-* **F1-Score Macro Avg**: **0.81** (81.0%)
-* **F1-Score Weighted Avg**: **0.83** (83.0%)
+### 5.1. Evaluasi Tingkat Piksel pada Data Uji (127.195 Sampel Piksel)
+Berdasarkan pengujian model K-Nearest Neighbors (KNN, $k=5$) menggunakan pembagian data independen (*Train-Test Split 80% : 20%* berstrata) persis sebagaimana pada bab pemodelan:
+* **Akurasi Keseluruhan (Accuracy)**: **87.53%** (~**87.5%**)
+* **F1-Score Macro Avg**: **0.87** (87.0%)
+* **F1-Score Weighted Avg**: **0.88** (88.0%)
 
 #### Laporan Klasifikasi per Kelas (Classification Report):
 
-| Kelas Tutupan Lahan | Precision | Recall | F1-Score | Support (Jumlah Piksel) |
+| Kelas Tutupan Lahan | Precision | Recall | F1-Score | Support (Piksel Uji) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Laut** | 0.98 | 0.98 | 0.98 | 134.745 |
-| **Mangrove** | 0.79 | 0.89 | 0.84 | 54.117 |
-| **Hutan** | 0.86 | 0.79 | 0.82 | 180.225 |
-| **Danau** | 0.88 | 0.75 | 0.81 | 101.386 |
-| **Sawah** | 0.71 | 0.76 | 0.74 | 86.280 |
-| **Bangunan** | 0.63 | 0.77 | 0.69 | 79.221 |
-| **Rata-rata Makro (Macro Avg)** | **0.81** | **0.82** | **0.81** | 635.974 |
-| **Rata-rata Tertimbang (Weighted Avg)** | **0.83** | **0.82** | **0.83** | 635.974 |
+| **Laut** | 0.99 | 0.99 | 0.99 | 26.949 |
+| **Mangrove** | 0.92 | 0.91 | 0.92 | 10.824 |
+| **Danau** | 0.90 | 0.84 | 0.87 | 20.277 |
+| **Hutan** | 0.86 | 0.89 | 0.87 | 36.045 |
+| **Sawah** | 0.80 | 0.80 | 0.80 | 17.256 |
+| **Bangunan** | 0.75 | 0.75 | 0.75 | 15.844 |
+| **Rata-rata Makro (Macro Avg)** | **0.87** | **0.86** | **0.87** | 127.195 |
+| **Rata-rata Tertimbang (Weighted Avg)** | **0.88** | **0.88** | **0.88** | 127.195 |
 
 
 ```{code-cell} ipython3
@@ -395,14 +395,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-# Metrik riil dari dataset
+# Metrik data uji 20% (127.195 piksel) - Akurasi 87.5%
 df_metrics = pd.DataFrame([
-    {"Kelas": "Laut", "Precision": 98.0, "Recall": 98.0, "F1-Score": 98.0},
-    {"Kelas": "Mangrove", "Precision": 79.0, "Recall": 89.0, "F1-Score": 84.0},
-    {"Kelas": "Hutan", "Precision": 86.0, "Recall": 79.0, "F1-Score": 82.0},
-    {"Kelas": "Danau", "Precision": 88.0, "Recall": 75.0, "F1-Score": 81.0},
-    {"Kelas": "Sawah", "Precision": 71.0, "Recall": 76.0, "F1-Score": 74.0},
-    {"Kelas": "Bangunan", "Precision": 63.0, "Recall": 77.0, "F1-Score": 69.0}
+    {"Kelas": "Laut", "Precision": 99.0, "Recall": 99.0, "F1-Score": 99.0},
+    {"Kelas": "Mangrove", "Precision": 92.0, "Recall": 91.0, "F1-Score": 92.0},
+    {"Kelas": "Danau", "Precision": 90.0, "Recall": 84.0, "F1-Score": 87.0},
+    {"Kelas": "Hutan", "Precision": 86.0, "Recall": 89.0, "F1-Score": 87.0},
+    {"Kelas": "Sawah", "Precision": 80.0, "Recall": 80.0, "F1-Score": 80.0},
+    {"Kelas": "Bangunan", "Precision": 75.0, "Recall": 75.0, "F1-Score": 75.0}
 ])
 labels = df_metrics["Kelas"].tolist()
 
@@ -422,7 +422,7 @@ for i, row in df_metrics.iterrows():
 
 plt.yticks(y_indices, labels, fontsize=10, fontweight="600", color="#18232F")
 plt.xlabel("Skor Performa Evaluasi (%)", fontsize=10.5, fontweight="600", color="#334155", labelpad=8)
-plt.title("Kinerja Klasifikasi per Kelas Tutupan Lahan (Model KNN, k=5)", fontsize=12, fontweight="bold", color="#18232F", pad=15)
+plt.title("Kinerja Klasifikasi Data Uji Tutupan Lahan (Model KNN, Akurasi 87,5%)", fontsize=12, fontweight="bold", color="#18232F", pad=15)
 plt.xlim(0, 115)
 plt.legend(frameon=True, facecolor="#F8FAFC", edgecolor="#E2E8F0", loc="lower right", fontsize=9.5)
 plt.grid(axis="x", linestyle="--", alpha=0.5, color="#CBD5E1")
@@ -441,16 +441,16 @@ plt.show()
 ---
 
 ### 5.2. Analisis Confusion Matrix
-Matriks konfusi pada data riil 635.974 piksel:
+Matriks konfusi pada data uji independen 127.195 piksel:
 
 | Aktual \ Prediksi | Bangunan | Danau | Hutan | Laut | Mangrove | Sawah | Total Aktual |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Bangunan** | **61.325** | 1.744 | 7.280 | 17 | 470 | 8.385 | 79.221 |
-| **Danau** | 7.943 | **76.522** | 6.925 | 2.180 | 3.683 | 4.133 | 101.386 |
-| **Hutan** | 17.745 | 4.192 | **141.647** | 325 | 4.372 | 11.944 | 180.225 |
-| **Laut** | 140 | 1.131 | 34 | **131.391** | 1.826 | 223 | 134.745 |
-| **Mangrove** | 775 | 2.098 | 1.251 | 471 | **48.039** | 1.483 | 54.117 |
-| **Sawah** | 9.690 | 1.750 | 6.670 | 280 | 2.503 | **65.387** | 86.280 |
+| **Bangunan** | **11.900** | 456 | 2.067 | 2 | 51 | 1.368 | 15.844 |
+| **Danau** | 869 | **16.963** | 1.412 | 158 | 287 | 588 | 20.277 |
+| **Hutan** | 1.722 | 622 | **32.157** | 28 | 228 | 1.288 | 36.045 |
+| **Laut** | 5 | 100 | 10 | **26.636** | 171 | 27 | 26.949 |
+| **Mangrove** | 100 | 347 | 224 | 76 | **9.896** | 181 | 10.824 |
+| **Sawah** | 1.310 | 307 | 1.695 | 17 | 144 | **13.783** | 17.256 |
 
 
 ```{code-cell} ipython3
@@ -461,12 +461,12 @@ import seaborn as sns
 
 cm_labels = ["Bangunan", "Danau", "Hutan", "Laut", "Mangrove", "Sawah"]
 cm_data = [
-    [61325,  1744,   7280,     17,    470,   8385],
-    [ 7943, 76522,   6925,   2180,   3683,   4133],
-    [17745,  4192, 141647,    325,   4372,  11944],
-    [  140,  1131,     34, 131391,   1826,    223],
-    [  775,  2098,   1251,    471,  48039,   1483],
-    [ 9690,  1750,   6670,    280,   2503,  65387]
+    [11900,   456,  2067,     2,    51,  1368],
+    [  869, 16963,  1412,   158,   287,   588],
+    [ 1722,   622, 32157,    28,   228,  1288],
+    [    5,   100,    10, 26636,   171,    27],
+    [  100,   347,   224,    76,  9896,   181],
+    [ 1310,   307,  1695,    17,   144, 13783]
 ]
 cm_df = pd.DataFrame(cm_data, index=cm_labels, columns=cm_labels)
 
@@ -488,7 +488,7 @@ sns.heatmap(
     annot_kws={"size": 9.5, "weight": "bold"},
     cbar_kws={"shrink": 0.82, "label": "Jumlah Sampel Piksel"}
 )
-plt.title("Confusion Matrix - K-Nearest Neighbors (KNN, k=5)\nEvaluasi Data Riil 635.974 Piksel", 
+plt.title("Confusion Matrix - K-Nearest Neighbors (KNN, k=5)\nData Uji 127.195 Piksel (Akurasi 87,5%)", 
           fontsize=12, fontweight="bold", color="#18232F", pad=15)
 plt.xlabel("Hasil Prediksi Model", fontsize=10.5, fontweight="600", color="#334155", labelpad=10)
 plt.ylabel("Kelas Ground Truth (Aktual)", fontsize=10.5, fontweight="600", color="#334155", labelpad=10)
@@ -499,24 +499,20 @@ plt.show()
 ```
 
 **Temuan Analisis Metrik**:
-1. **Laut**: Memiliki separasi paling sempurna (**98% F1-Score**) karena respon serapan inframerah dekat (NIR/SWIR) yang sangat khas dibandingkan daratan.
-2. **Mangrove & Hutan**: Menunjukkan performa tinggi (**F1-Score 84% dan 82%**), didukung oleh kombinasi NDVI yang kuat dan MNDWI untuk membedakan lahan basah pesisir.
-3. **Bangunan & Sawah**: Memiliki tingkat kekeliruan paling tinggi (**F1-Score 69% dan 74%**). Hal ini wajar secara fisis penginderaan jauh karena adanya piksel campuran (*mixed pixel*) berupa pekarangan/pohon di sekitar pemukiman serta kondisi sawah yang bervariasi (sedang tergenang air, masa tumbuh hijau, atau bera/tanah terbuka).
+1. **Laut**: Memiliki akurasi tertinggi (**99% F1-Score**) karena respon penyerapan total pada inframerah dekat (NIR/SWIR).
+2. **Mangrove & Hutan**: Menunjukkan performa sangat kuat (**F1-Score 92% dan 87%**), didukung oleh kombinasi indeks vegetasi NDVI dan indeks air MNDWI.
+3. **Danau**: Memiliki performa tinggi (**F1-Score 87%**), dengan sedikit kebingungan spektral terhadap mangrove dan hutan di perbatasan danau yang rimbun.
+4. **Bangunan & Sawah**: Mencapai F1-Score **75% dan 80%**, di mana sebagian piksel bangunan di pinggiran kota berbagi respon spektral dengan vegetasi/sawah akibat pengaruh pohon pekarangan perumahan.
 
 ---
 
 ### 5.3. Evaluasi Spasial Tingkat Poligon (Convex Hull)
-Pada visualisasi peta interaktif di bagian sebelumnya (Peta Prediksi Model), seluruh poligon dievaluasi berdasarkan nilai rata-rata spektral piksel di dalamnya:
+Pada visualisasi peta interaktif di bagian sebelumnya (Peta Prediksi Model), hasil prediksi model juga dievaluasi pada level agregasi poligon utuh:
 * **Total Poligon Sampel**: 360 poligon (masing-masing 60 poligon per kelas)
 * **Poligon Benar Terklasifikasi**: **317 poligon (88.06%)**
 * **Poligon Salah Terklasifikasi**: **43 poligon (11.94%)**
 
 Poligon yang mengalami salah klasifikasi tersebut telah ditandai secara visual pada **Peta Prediksi Model** di atas menggunakan **garis putus-putus merah** dan **ikon tanda seru (`!`)** yang dapat di-hover untuk melihat perbandingan label aktual dan prediksi.
-
-#### Contoh Karakteristik Poligon yang Salah Terprediksi:
-* **Bangunan terprediksi Sawah/Hutan** (misal `Bangunan_0006`, `Bangunan_0010`): Terjadi pada pemukiman pedesaan dengan tutupan vegetasi dan pekarangan yang dominan.
-* **Danau terprediksi Mangrove/Sawah** (misal `Danau_0003`, `Danau_0015`): Terjadi pada badan air dangkal yang memiliki gulma air/eceng gondok atau sedimentasi tinggi.
-* **Laut terprediksi Danau** (misal `Laut_0014`, `Laut_0016`): Terjadi pada poligon perairan teluk dangkal dekat muara yang memiliki kandungan sedimen menyerupai danau daratan.
 
 ---
 
@@ -524,16 +520,17 @@ Poligon yang mengalami salah klasifikasi tersebut telah ditandai secara visual p
 
 Berdasarkan hasil analisis data dan pemodelan tutupan lahan berbasis Sentinel-2A di Jawa Timur:
 
-1. **Akurasi Model**:
-   * Model KNN ($k=5$) menghasilkan akurasi tingkat piksel sebesar **82.44%** dan akurasi tingkat poligon sebesar **88.06%** (317 dari 360 poligon benar).
-   * Nilai ini realistis untuk data spektral mentah Sentinel-2 tanpa manipulasi atau over-fitting.
+1. **Konsistensi Akurasi Model**:
+   * Model KNN ($k=5$) menghasilkan akurasi sebesar **87.53%** (~**87.5%**) pada data uji independen 127.195 piksel, selaras dengan tahap *Modeling*.
+   * Pada tingkat poligon wilayah (Convex Hull), akurasi agregat mencapai **88.06%** (317 dari 360 poligon terprediksi secara akurat).
 
-2. **Kekuatan dan Keterbatasan**:
-   * Kelas perairan laut lepas dan vegetasi lebat (hutan/mangrove) terklasifikasi dengan sangat stabil.
-   * Kelas bangunan dan sawah membutuhkan fitur tambahan (misal tekstur GLCM atau data multi-temporal) untuk mengatasi efek piksel campuran.
+2. **Kekuatan dan Karakteristik Spektral**:
+   * Kelas perairan laut lepas dan vegetasi lebat (hutan/mangrove) terklasifikasi dengan keandalan sangat tinggi (F1-score 87% - 99%).
+   * Kelas bangunan dan sawah memiliki tantangan piksel campuran (*mixed pixel*) di area transisi desa-kota.
 
 3. **Manfaat Visualisasi Interaktif**:
    * Peta interaktif poligon (Convex Hull) dan peta regional se-Jawa Timur yang disajikan pada bab sebelumnya berhasil memvisualisasikan sebaran lahan nyata secara intuitif, di mana anomali spasial dapat langsung diidentifikasi melalui penanda visual peringatan.
+
 
 
 
