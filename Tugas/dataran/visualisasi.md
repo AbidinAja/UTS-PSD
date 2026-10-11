@@ -121,16 +121,8 @@ from sklearn.preprocessing import StandardScaler
 fitur = ['B02', 'B03', 'B04', 'B08', 'B11', 'NDVI', 'NDWI', 'MNDWI', 'NDBI']
 df_bersih = df.dropna(subset=fitur + ['label_teks']).copy()
 
-# Peningkatan Kualitas Sebaran Lahan:
-# Eliminasi noise spektral campuran perbatasan poligon
-df_bersih = df_bersih[
-    ~((df_bersih['label_teks'] == 'Laut') & (df_bersih['NDVI'] > 0.05)) &
-    ~((df_bersih['label_teks'] == 'Danau') & (df_bersih['NDVI'] > 0.20)) &
-    ~((df_bersih['label_teks'] == 'Hutan') & (df_bersih['NDVI'] < 0.25)) &
-    ~((df_bersih['label_teks'] == 'Bangunan') & (df_bersih['NDVI'] > 0.30))
-].copy()
-
-# Ambil sampel acak berimbang per kelas (600 per kelas untuk rendering cepat Jupyter Book)
+# Ambil sampel acak berimbang per kelas (600 per kelas)
+# Mempertahankan karakteristik spektral asli piksel namun memungkinkan inferensi cepat (~1 menit)
 df_sample = df_bersih.groupby('label_teks', group_keys=False).apply(
     lambda x: x.sample(n=min(len(x), 600), random_state=42)
 )
@@ -142,76 +134,89 @@ y_train = df_sample['label_teks']
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 
-# 3. Model KNN Teroptimasi
-knn_model = KNeighborsClassifier(n_neighbors=7, weights='distance')
+# 3. Inisialisasi dan Pelatihan Model KNN (k=5)
+knn_model = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
 knn_model.fit(X_train_scaled, y_train)
 
-# Evaluasi Prediksi pada Data Sampel Asli
-df_uji = df_bersih.groupby('label_teks', group_keys=False).apply(
-    lambda x: x.sample(n=min(len(x), 60), random_state=123)
-).copy()
+# 4. Agregasi fitur per poligon (menggunakan rata-rata piksel)
+poly_features = df_bersih.groupby('poligon_id')[fitur].mean().reset_index()
+poly_features_scaled = scaler.transform(poly_features[fitur])
 
-X_uji_scaled = scaler.transform(df_uji[fitur])
-df_uji['prediksi'] = knn_model.predict(X_uji_scaled)
-df_uji['benar'] = (df_uji['label_teks'] == df_uji['prediksi'])
+# Prediksi label poligon menggunakan model KNN
+poly_features['prediksi_label'] = knn_model.predict(poly_features_scaled)
 
-# Rekonstruksi Poligon Data Uji
-gdf_uji = gpd.GeoDataFrame(
-    df_uji, geometry=gpd.points_from_xy(df_uji.lon, df_uji.lat), crs="EPSG:4326"
-)
-polygons_uji = gdf_uji.dissolve(by='poligon_id', aggfunc='first').reset_index()
-polygons_uji['geometry'] = polygons_uji['geometry'].convex_hull
-polygons_uji = polygons_uji[~polygons_uji['geometry'].is_empty]
+# Gabungkan hasil prediksi dengan geometri dan label asli poligon sebelumnya
+polygons_pred = polygons[['poligon_id', 'geometry', 'label_teks']].merge(poly_features[['poligon_id', 'prediksi_label']], on='poligon_id')
 
-# Membuat Peta Evaluasi Prediksi KNN
-m_knn = folium.Map(
+# 3. Plotting ke Peta Baru (Peta Prediksi)
+m_pred = folium.Map(
     location=map_center, 
     zoom_start=10, 
     tiles='https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
     attr='Google'
 )
 
+# Tambahkan opsi satelit
 folium.TileLayer(
-    tiles='https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-    attr='Google',
-    name='Google Satellite',
-    overlay=False,
-    control=True
-).add_to(m_knn)
+    tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attr='Esri', name='Esri Satellite', overlay=False, control=True
+).add_to(m_pred)
 
-fg_benar = folium.FeatureGroup(name='Prediksi Benar (Sesuai Kelas)')
-fg_salah = folium.FeatureGroup(name='Salah Prediksi (Evaluasi)')
-m_knn.add_child(fg_benar)
-m_knn.add_child(fg_salah)
+# Siapkan FeatureGroup untuk tiap kelas prediksi dan satu grup khusus "Salah Prediksi"
+feature_groups_pred = {}
+for label in polygons_pred['prediksi_label'].unique():
+    label_str = str(label)
+    feature_groups_pred[label_str] = folium.FeatureGroup(name=f"Prediksi: {label_str}")
+    m_pred.add_child(feature_groups_pred[label_str])
 
-for idx, row in polygons_uji.iterrows():
-    pred_label = str(row['prediksi'])
-    asli_label = str(row['label_teks'])
-    is_correct = bool(row['benar'])
-    c = colors.get(pred_label, 'gray')
-    
-    dash = None if is_correct else "6, 6"
-    b_color = c if is_correct else "#D32F2F"
-    b_weight = 1 if is_correct else 3
-    target_fg = fg_benar if is_correct else fg_salah
+salah_prediksi_group = folium.FeatureGroup(name="⚠️ Salah Prediksi", show=True)
+m_pred.add_child(salah_prediksi_group)
+
+# Memplot poligon dengan warna berdasarkan kelas prediksi
+for idx, row in polygons_pred.iterrows():
+    label_pred = str(row['prediksi_label'])
+    label_asli = str(row['label_teks'])
+    color = colors.get(label_pred, 'black')
+    is_correct = (label_pred == label_asli)
+    centroid = row['geometry'].centroid
     
     try:
+        # Plot dasar (sesuai prediksi)
         folium.GeoJson(
             data=row['geometry'].__geo_interface__,
-            style_function=lambda x, c=c, bc=b_color, bw=b_weight, d=dash: {
+            style_function=lambda x, c=color: {
                 'fillColor': c,
-                'color': bc,
-                'weight': bw,
-                'dashArray': d,
-                'fillOpacity': 0.75
+                'color': c,
+                'weight': 1,
+                'fillOpacity': 0.7
             },
-            tooltip=f"Aktual: {asli_label} | Prediksi KNN: {pred_label}"
-        ).add_to(target_fg)
+            tooltip=f"Prediksi: {label_pred} | Asli: {label_asli} (ID: {row['poligon_id']})"
+        ).add_to(feature_groups_pred[label_pred])
+
+        # Plot tambahan (highlight outline merah dan tanda seru) jika salah prediksi
+        if not is_correct:
+            folium.GeoJson(
+                data=row['geometry'].__geo_interface__,
+                style_function=lambda x: {
+                    'fillColor': 'none',
+                    'color': 'red',
+                    'weight': 4,
+                    'dashArray': '5, 5'
+                },
+                tooltip=f"⚠️ SALAH PREDIKSI! Asli: {label_asli}, Prediksi: {label_pred} (ID: {row['poligon_id']})"
+            ).add_to(salah_prediksi_group)
+            
+            # Tambahkan marker Tanda Seru (!) pada poligon yang salah diprediksi
+            folium.Marker(
+                location=[centroid.y, centroid.x],
+                icon=folium.Icon(color='red', icon='exclamation', prefix='fa'),
+                tooltip=f"⚠️ SALAH PREDIKSI! Asli: {label_asli} | Prediksi: {label_pred} (ID: {row['poligon_id']})"
+            ).add_to(salah_prediksi_group)
     except Exception:
         pass
 
-folium.LayerControl().add_to(m_knn)
-m_knn
+folium.LayerControl().add_to(m_pred)
+m_pred
 ```
 ```{code-cell} ipython3
 :tags: [hide-input]
