@@ -113,23 +113,32 @@ Sebagai penutup, mari kita gunakan model KNN (dengan $K=5$) untuk memprediksi ke
 ```{code-cell} ipython3
 :tags: [hide-input]
 
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 
-# 1. Persiapan Data dan Pelatihan Model KNN
+# 1. Menentukan Fitur (X) dan Target (y)
 fitur = ['B02', 'B03', 'B04', 'B08', 'B11', 'NDVI', 'NDWI', 'MNDWI', 'NDBI']
 df_bersih = df.dropna(subset=fitur + ['label_teks']).copy()
 
-X = df_bersih[fitur]
-y = df_bersih['label_teks']
+# Ambil sampel acak berimbang per kelas (600 per kelas)
+# Mempertahankan karakteristik spektral asli piksel namun memungkinkan inferensi cepat (~1 menit)
+df_sample = df_bersih.groupby('label_teks', group_keys=False).apply(
+    lambda x: x.sample(n=min(len(x), 600), random_state=42)
+)
 
+X_train = df_sample[fitur]
+y_train = df_sample['label_teks']
+
+# 2. Standarisasi Fitur
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+X_train_scaled = scaler.fit_transform(X_train)
 
-knn_model = KNeighborsClassifier(n_neighbors=5)
-knn_model.fit(X_scaled, y)
+# 3. Inisialisasi dan Pelatihan Model KNN (k=5)
+knn_model = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
+knn_model.fit(X_train_scaled, y_train)
 
-# 2. Agregasi fitur per poligon (menggunakan rata-rata piksel)
+# 4. Agregasi fitur per poligon (menggunakan rata-rata piksel)
 poly_features = df_bersih.groupby('poligon_id')[fitur].mean().reset_index()
 poly_features_scaled = scaler.transform(poly_features[fitur])
 
@@ -208,88 +217,71 @@ Pada peta ketiga ini, kita akan membawa model **KNN** selangkah lebih maju denga
 
 Karena data citra satelit mentah berupa raster berukuran besar, kita akan mengekstrak piksel-piksel raster `.tif` (terdiri dari 5 *band* yang sama), menghitung indeks spektralnya, memprediksi piksel per piksel menggunakan model klasifikasi, dan mengubahnya menjadi *layer* transparan per kelas. Melalui antarmuka Folium, Anda dapat mengaktifkan atau mematikan centang pada kelas tertentu (misal: hanya melihat "Hutan" dan "Sawah").
 
-> **Catatan:** Pastikan Anda memiliki file citra GeoTIFF (EPSG:4326) yang berisi band B02, B03, B04, B08, B11 pada lokasi `FILE_RASTER`.
+Untuk memperoleh citra satelit skala regional Jawa Timur, kita menggunakan layanan openEO Copernicus Data Space Ecosystem (CDSE). Skrip berikut digunakan untuk mengunduh komposit bulanan Sentinel-2 L2A (B02, B03, B04, B08, B11) dengan resolusi spasial ~250m:
+
+```python
+import os
+import openeo
+
+FILE_RASTER = '../../Data/UTS/jatim_250m.tif'
+
+# Unduh data satelit Jawa Timur via openEO Batch Job
+if not os.path.exists(FILE_RASTER):
+    connection = openeo.connect("https://openeo.dataspace.copernicus.eu").authenticate_oidc()
+    
+    bbox_jatim = {
+        "west": 110.89, "south": -8.84,
+        "east": 114.63, "north": -6.65
+    }
+    
+    cube = connection.load_collection(
+        "SENTINEL2_L2A",
+        spatial_extent=bbox_jatim,
+        temporal_extent=["2024-08-01", "2024-08-31"],
+        bands=['B02', 'B03', 'B04', 'B08', 'B11'],
+        max_cloud_cover=30
+    )
+    
+    # Agregasi waktu (Median) & resampling resolusi ke ~250 meter
+    cube = cube.median_time()
+    cube = cube.resample_spatial(resolution=0.0025, projection=4326)
+    cube = cube.save_result(format="GTiff")
+    
+    # Eksekusi via Batch Job
+    job = cube.create_job(title="Jatim_Composite_250m")
+    job.start_and_wait()
+    job.get_results().download_file(FILE_RASTER)
+```
+
+Setelah citra `jatim_250m.tif` tersedia, kita mengekstrak nilai reflektansi dari masing-masing band, menghitung indeks spektral, melakukan prediksi piksel per piksel menggunakan model **KNN**, dan menampilkannya ke dalam peta interaktif Folium:
 
 ```{code-cell} ipython3
 :tags: [hide-input]
 
+import os
+import warnings
 import rasterio
 import numpy as np
 import folium
-import openeo
-import os
+
+warnings.filterwarnings('ignore')
 
 # Fungsi pembantu: konversi kode warna hex (#RRGGBB) ke (R, G, B)
 def hex_to_rgb(hex_code):
     hex_code = hex_code.lstrip('#')
     return tuple(int(hex_code[i:i+2], 16) for i in (0, 2, 4))
 
-# Tentukan path raster wilayah utuh (resolusi rendah)
-FILE_RASTER = '../../Data/UTS/jatim_250m.tif' 
-
-# 1. UNDUH DATA VIA OPENEO (JIKA BELUM ADA)
+# Tentukan path raster wilayah utuh
+FILE_RASTER = '../../Data/UTS/jatim_250m.tif'
 if not os.path.exists(FILE_RASTER):
-    print("Mengunduh komposit Jawa Timur via openEO (Resolusi ~250m). Ini mungkin memakan waktu beberapa menit...")
-    try:
-        # Hubungkan ke CDSE openEO (akan meminta login jika token kadaluarsa)
-        connection = openeo.connect('https://openeo.dataspace.copernicus.eu').authenticate_oidc()
-        
-        # Bounding Box Kasar untuk wilayah Jawa Timur
-        bbox_jatim = {
-            "west": 110.89, "south": -8.84,
-            "east": 114.63, "north": -6.65
-        }
-        
-        cube = connection.load_collection(
-            "SENTINEL2_L2A",
-            spatial_extent=bbox_jatim,
-            temporal_extent=["2026-09-01", "2026-09-30"],
-            bands=['B02', 'B03', 'B04', 'B08', 'B11'],
-            max_cloud_cover=30
-        )
-        
-        # Agregasi waktu (Median) untuk membersihkan sisa awan
-        cube = cube.median_time()
-        
-        # PENTING: Turunkan resolusi spasial ke 0.0025 derajat (~250 meter) agar tidak Out-of-Memory
-        cube = cube.resample_spatial(resolution=0.0025, projection=4326)
-        
-        # Unduh secara sinkron (direct download)
-        cube.download(FILE_RASTER, format="GTiff")
-        print("Unduhan selesai!")
-    except Exception as e:
-        print(f"Gagal mengunduh data dari openEO: {e}")
-        print("Membangkitkan data dummy (Dummy Raster) untuk fallback agar visualisasi tetap berjalan...")
-        
-        # Fallback: Buat raster dummy jika server openEO sedang down/timeout
-        import rasterio.transform
-        width, height = 1500, 900
-        bbox_jatim = {"west": 110.89, "south": -8.84, "east": 114.63, "north": -6.65}
-        transform = rasterio.transform.from_bounds(
-            bbox_jatim["west"], bbox_jatim["south"], 
-            bbox_jatim["east"], bbox_jatim["north"], 
-            width, height
-        )
-        
-        # Buat nilai acak menyerupai data reflektansi Sentinel
-        dummy_b2 = np.random.randint(200, 1000, (height, width)).astype(np.float32)
-        dummy_b3 = np.random.randint(200, 1000, (height, width)).astype(np.float32)
-        dummy_b4 = np.random.randint(100, 2000, (height, width)).astype(np.float32)
-        dummy_b8 = np.random.randint(500, 4000, (height, width)).astype(np.float32)
-        dummy_b11 = np.random.randint(300, 2500, (height, width)).astype(np.float32)
-        
-        with rasterio.open(
-            FILE_RASTER, 'w', driver='GTiff',
-            height=height, width=width, count=5,
-            dtype=np.float32, crs='EPSG:4326', transform=transform,
-        ) as dst:
-            dst.write(dummy_b2, 1)
-            dst.write(dummy_b3, 2)
-            dst.write(dummy_b4, 3)
-            dst.write(dummy_b8, 4)
-            dst.write(dummy_b11, 5)
+    for p in ['jatim_250m.tif', '../Data/UTS/jatim_250m.tif', '../../Data/UTS/jatim_250m.tif']:
+        if os.path.exists(p):
+            FILE_RASTER = p
+            break
 
-# 2. BACA RASTER DAN LAKUKAN PREDIKSI
+m_full = None
+
+# BACA RASTER DAN LAKUKAN PREDIKSI
 if os.path.exists(FILE_RASTER):
     with rasterio.open(FILE_RASTER) as src:
         # Urutan dari openEO biasanya berdasar abjad band atau urutan request: B02, B03, B04, B08, B11
@@ -313,20 +305,27 @@ if os.path.exists(FILE_RASTER):
     
     height, width = b2.shape
     
+    import warnings
+    warnings.filterwarnings('ignore')
+    
     # Ratakan (flatten) array 2D menjadi 1D
     features_stack = np.column_stack((
         b2.flatten(), b3.flatten(), b4.flatten(), b8.flatten(), b11.flatten(),
         ndvi.flatten(), ndwi.flatten(), mndwi.flatten(), ndbi.flatten()
     ))
     
-    # Deteksi piksel kosong (NoData / padding hitam di luar batas peta)
-    valid_mask = (b2.flatten() > 0)
+    # Deteksi piksel valid (bukan padding 0 dan tidak ada NaN/inf)
+    valid_mask = (b2.flatten() > 0) & np.isfinite(features_stack).all(axis=1)
     
-    # Lakukan scaling (Hanya pada piksel valid)
-    features_scaled = scaler.transform(features_stack)
-    
-    # Prediksi (untuk seluruh area, termasuk yang nol, tapi nanti ditransparansikan)
-    pred_1d = knn_model.predict(features_scaled)
+    # Lakukan scaling & prediksi langsung pada seluruh piksel valid
+    pred_1d = np.full(height * width, fill_value="", dtype=object)
+    if np.any(valid_mask):
+        features_valid = pd.DataFrame(features_stack[valid_mask], columns=fitur)
+        features_scaled = scaler.transform(features_valid)
+        print("Memprediksi tutupan lahan seluruh Jawa Timur dengan KNN...")
+        pred_1d[valid_mask] = knn_model.predict(features_scaled)
+        print("Prediksi selesai! Membangun peta interaktif...")
+        
     pred_2d = pred_1d.reshape((height, width))
     valid_2d = valid_mask.reshape((height, width))
     
@@ -342,7 +341,7 @@ if os.path.exists(FILE_RASTER):
     for label_str, hex_color in colors.items():
         rgba_img = np.zeros((height, width, 4), dtype=np.uint8)
         
-        # Mask: Prediksi label tsb DAN merupakan piksel valid (bukan laut luar area / padding)
+        # Mask: Prediksi label tsb DAN merupakan piksel valid
         mask = (pred_2d == label_str) & valid_2d
         
         if np.any(mask):
@@ -361,7 +360,7 @@ if os.path.exists(FILE_RASTER):
             ).add_to(m_full)
     
     folium.LayerControl().add_to(m_full)
-    display(m_full)
-else:
-    print("Tidak dapat menampilkan peta karena file raster tidak tersedia.")
+
+# Menampilkan peta secara langsung ke Jupyter Book
+m_full
 ```
