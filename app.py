@@ -4,7 +4,7 @@ Berbasis Citra Sentinel-2A Level-2A & Algoritma K-Nearest Neighbors (KNN)
 
 Tema: Coklat-Putih Elegan (Coffee & Cream) dengan Dukungan Dark Mode Penuh
 3 Peta Interaktif (Persis Sesuai visualisasi.md):
-  1. Peta 1: Sampel Ground Truth (Poligon Digitasi Asli 6 Kelas)
+        "Peta 1: Sampel Ground Truth",
   2. Peta 2: Klasifikasi Model KNN Berdasarkan Sampel (Evaluasi & Sorotan Salah Prediksi)
   3. Peta 3: Prediksi Menyeluruh Regional Jawa Timur (Raster Citra Asli)
 """
@@ -352,7 +352,7 @@ def muat_konten_html(path_str: str) -> str | None:
 with st.sidebar:
     st.markdown(f"""
     <div style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:{C_TEXT_MUTED}; margin-bottom:0.45rem; display:flex; align-items:center; gap:0.4rem;">
-        🎨 <span>Mode Tema Tampilan</span>
+    <div style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:{C_TEXT_MUTED}; margin-bottom:0.45rem;">PILIHAN TEMA TAMPILAN</div>
     </div>
     """, unsafe_allow_html=True)
     mode_dipilih = st.radio(
@@ -608,9 +608,9 @@ Tiap kelas tutupan lahan berupa layer transparan yang dapat dinyalakan/dimatikan
 # Render Tata Letak 3 Peta
 if mode_layout == "Tab Navigasi (1 Peta per Tab)":
     tab1, tab2, tab3 = st.tabs([
-        "📍 Peta 1: Sampel Ground Truth",
-        "🎯 Peta 2: Prediksi KNN Sampel",
-        "🗺️ Peta 3: Regional Jawa Timur"
+        "Peta 1: Sampel Ground Truth",
+        "Peta 2: Prediksi KNN Sampel",
+        "Peta 3: Regional Jawa Timur"
     ])
     with tab1:
         render_peta_1()
