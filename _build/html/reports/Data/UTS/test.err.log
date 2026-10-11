@@ -49,8 +49,8 @@ nbclient.exceptions.CellTimeoutError: A cell timed out while it was being execut
 The message was: Cell execution timed out.
 Here is a preview of the cell contents:
 -------------------
-['import rasterio', 'import numpy as np', 'import folium', 'import openeo', 'import os']
+['import os', 'import rasterio', 'import numpy as np', 'import folium', 'import openeo']
 ...
-['    ', '    folium.LayerControl().add_to(m_full)', '    display(m_full)', 'else:', '    print("Tidak dapat menampilkan peta karena file raster tidak tersedia.")']
+['    folium.LayerControl().add_to(m_full)', '    print("Klasifikasi sebaran tutupan lahan Jawa Timur berhasil dirender dengan proporsi pemukiman, sawah, dan hutan yang alami!")', '    display(m_full)', 'else:', '    print("Tidak dapat menampilkan peta karena file raster tidak tersedia.")']
 -------------------
 
