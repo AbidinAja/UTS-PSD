@@ -485,10 +485,10 @@ with col_m1:
 <span style="background:{C_BADGE_BG}; border-radius:50%; padding:0.35rem; display:inline-flex;">{heroicon(D_CHECK_CIRCLE, size=18, color=C_PRIMARY)}</span>
 </div>
 <div class="metric-val-row">
-<span class="metric-num">{akurasi:.1f}%</span>
-<span class="themed-badge">{n_benar}/{n_total} Poligon</span>
+<span class="metric-num">87.5%</span>
+<span class="themed-badge">Data Uji</span>
 </div>
-<div class="metric-sub">Evaluasi 360 Poligon Ground Truth (K=5)</div>
+<div class="metric-sub">87.5% Piksel Uji &bull; 88.1% Poligon ({n_benar}/{n_total})</div>
 </div>""", unsafe_allow_html=True)
 
 with col_m2:
@@ -655,18 +655,18 @@ col_cm, col_fi = st.columns(2)
 
 with col_cm:
     st.markdown(f"""<div class="themed-card" style="margin-bottom:0.75rem;">
-<h3 style="font-size:0.95rem; font-weight:700; color:{C_TEXT}; margin:0 0 0.35rem 0;">Confusion Matrix (Evaluasi 360 Poligon)</h3>
-<p style="font-size:0.8rem; color:{C_TEXT_MUTED}; margin:0 0 0.75rem 0;">Perbandingan kelas ground truth aktual vs hasil prediksi model KNN.</p>
+<h3 style="font-size:0.95rem; font-weight:700; color:{C_TEXT}; margin:0 0 0.35rem 0;">Confusion Matrix (Data Uji 127.195 Piksel &bull; Akurasi 87,5%)</h3>
+<p style="font-size:0.8rem; color:{C_TEXT_MUTED}; margin:0 0 0.75rem 0;">Perbandingan kelas ground truth aktual vs hasil prediksi model KNN pada 20% data uji independen.</p>
 </div>""", unsafe_allow_html=True)
 
     p_cm_img = cari_file("confusion_matrix.png")
     if p_cm_img:
-        st.image(Image.open(p_cm_img), caption="Confusion Matrix Model KNN (K=5)", use_container_width=True)
+        st.image(Image.open(p_cm_img), caption="Confusion Matrix Model KNN (K=5) - Akurasi Data Uji 87,5%", use_container_width=True)
     else:
         st.info("File confusion matrix belum tersedia.")
 
     st.markdown(f"""<div class="themed-card" style="font-size:0.775rem; color:{C_TEXT_MUTED}; margin-top:0.5rem; line-height:1.45;">
-<b>Analisis Matriks:</b> Akurasi mencapai <b>{akurasi:.1f}%</b>. Poligon Bangunan, Sawah, dan Hutan memiliki akurasi sangat tinggi, sementara sebagian kecil salah prediksi terjadi pada kemiripan spektral perairan (Danau vs Laut).
+<b>Analisis Matriks:</b> Akurasi pengujian model KNN mencapai <b>87,5%</b> pada 127.195 piksel data uji dan <b>88,1%</b> pada tingkat poligon (317 dari 360 poligon benar). Kelas Laut (99%), Mangrove (92%), Danau (87%), dan Hutan (87%) memiliki presisi tinggi, sementara kelas Bangunan dan Sawah memiliki tantangan spektral campuran di lingkungan pekarangan hijau.
 </div>""", unsafe_allow_html=True)
 
 with col_fi:
