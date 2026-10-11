@@ -32,16 +32,7 @@ st.set_page_config(
 if "theme_mode" not in st.session_state:
     st.session_state["theme_mode"] = "Light Mode (Coklat-Putih)"
 
-with st.sidebar:
-    st.markdown("### Tema Tampilan")
-    mode_dipilih = st.radio(
-        "Pilih Mode Warna:",
-        options=["Light Mode (Coklat-Putih)", "Dark Mode (Espresso Dark)"],
-        index=0 if st.session_state["theme_mode"] == "Light Mode (Coklat-Putih)" else 1,
-        help="Ganti nuansa tampilan antara Coklat-Putih bersih atau Dark Mode bernuansa kopi pekat."
-    )
-    st.session_state["theme_mode"] = mode_dipilih
-    is_dark = (mode_dipilih == "Dark Mode (Espresso Dark)")
+is_dark = (st.session_state["theme_mode"] == "Dark Mode (Espresso Dark)")
 
 # Definisi Token Palet Warna
 if not is_dark:
@@ -105,12 +96,13 @@ D_SATELLITE = "m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 
 
 
 # ==============================================================================
-# 4. INJECT CSS DINAMIS SESUAI TEMA AKTIF
+# 4. INJECT CSS DINAMIS DENGAN SPESIFISITAS TINGGI (KOMPATIBEL STREAMLIT CLOUD)
 # ==============================================================================
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
+    /* Background Aplikasi & Font Utama */
     html, body, [data-testid="stAppViewContainer"], .stApp {{
         background-color: {C_BG} !important;
         font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
@@ -121,9 +113,49 @@ st.markdown(f"""
         background-color: transparent !important;
     }}
 
-    [data-testid="stSidebar"] {{
+    /* Sidebar Wrapper & Semua Elemen Anak di Sidebar */
+    [data-testid="stSidebar"], [data-testid="stSidebarContent"] {{
         background-color: {C_SIDEBAR} !important;
         border-right: 1px solid {C_BORDER} !important;
+    }}
+
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] h4,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] div,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] * {{
+        color: {C_TEXT} !important;
+    }}
+
+    /* Paksa Label & Radio Button Sesuai Warna Teks Tema (Cegah Teks Putih di Streamlit Cloud) */
+    [data-testid="stWidgetLabel"] p,
+    [data-testid="stWidgetLabel"] label,
+    [data-testid="stWidgetLabel"] span,
+    div[role="radiogroup"] label,
+    div[role="radiogroup"] label p,
+    div[role="radiogroup"] label span,
+    div[role="radiogroup"] label div {{
+        color: {C_TEXT} !important;
+        font-weight: 600 !important;
+    }}
+
+    /* Indikator Radio Terpilih */
+    div[role="radiogroup"] div[aria-checked="true"] {{
+        border-color: {C_PRIMARY} !important;
+    }}
+
+    /* Global Headings & Markdown */
+    [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stMarkdownContainer"] h3,
+    [data-testid="stMarkdownContainer"] h4,
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li {{
+        color: {C_TEXT} !important;
     }}
 
     /* Card Box */
@@ -319,7 +351,24 @@ def muat_konten_html(path_str: str) -> str | None:
 # ==============================================================================
 with st.sidebar:
     st.markdown(f"""
-    <div style="display:flex; align-items:center; gap:0.6rem; margin-top:0.5rem; margin-bottom:1.15rem;">
+    <div style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:{C_TEXT_MUTED}; margin-bottom:0.45rem; display:flex; align-items:center; gap:0.4rem;">
+        🎨 <span>Mode Tema Tampilan</span>
+    </div>
+    """, unsafe_allow_html=True)
+    mode_dipilih = st.radio(
+        "Mode Tampilan",
+        options=["Light Mode (Coklat-Putih)", "Dark Mode (Espresso Dark)"],
+        index=0 if st.session_state["theme_mode"] == "Light Mode (Coklat-Putih)" else 1,
+        label_visibility="collapsed"
+    )
+    if mode_dipilih != st.session_state["theme_mode"]:
+        st.session_state["theme_mode"] = mode_dipilih
+        st.rerun()
+
+    st.markdown(f'<hr style="border:none; border-top:1px solid {C_BORDER}; margin:0.85rem 0;">', unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div style="display:flex; align-items:center; gap:0.6rem; margin-top:0.25rem; margin-bottom:1.15rem;">
         {heroicon(D_GLOBE, size=26, color=C_PRIMARY)}
         <div>
             <h2 style="font-size:1.1rem; font-weight:800; color:{C_TEXT}; margin:0; line-height:1.2;">LULC Spasial</h2>
@@ -687,7 +736,7 @@ if df_pred is not None:
 
     csv_bytes = df_tampil.to_csv(index=False).encode("utf-8")
     st.download_button(
-        label="Unduh Data Hasil Prediksi (CSV)",
+        label="📥 Unduh Data Hasil Prediksi (CSV)",
         data=csv_bytes,
         file_name="prediksi_poligon_knn_jatim.csv",
         mime="text/csv"
