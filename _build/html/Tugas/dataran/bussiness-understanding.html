@@ -65,7 +65,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="2. Data Understanding &amp; Karakteristik Data Spasial" href="data-understanding.html" />
-    <link rel="prev" title="lands" href="dataran.html" />
+    <link rel="prev" title="LULC" href="dataran.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -216,7 +216,7 @@
             </li>
         </ul>
         <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="reference internal" href="dataran.html">lands</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="dataran.html">LULC</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">1. Business Understanding</a></li>
 <li class="toctree-l2"><a class="reference internal" href="data-understanding.html">2. Data Understanding &amp; Karakteristik Data Spasial</a></li>
 
@@ -421,10 +421,18 @@
                   
   <section class="tex2jax_ignore mathjax_ignore" id="business-understanding">
 <h1>1. Business Understanding<a class="headerlink" href="#business-understanding" title="Link to this heading">#</a></h1>
-<p><strong>Latar Belakang</strong><br />
-Informasi mengenai tutupan dan penggunaan lahan sangat penting dalam perencanaan wilayah, manajemen sumber daya alam, hingga memantau perubahan iklim. Pendataan lahan secara manual dengan terjun langsung ke lapangan memakan waktu dan biaya operasional yang sangat besar. Untungnya, satelit observasi bumi seperti <strong>Sentinel-2A</strong> mengorbit dan mengambil citra bumi secara berkala. Namun, membedakan mana Sawah, Danau, atau Hutan dari citra satelit mentah tetap memerlukan pengamatan khusus dari tenaga ahli.</p>
-<p><strong>Tujuan Bisnis</strong><br />
-Mengaplikasikan teknik <em>Machine Learning</em> untuk mengklasifikasikan wilayah-wilayah di citra satelit ke dalam 6 kelas utama (Sawah, Bangunan, Mangrove, Hutan, Laut, dan Danau) secara otomatis, guna mempercepat efisiensi waktu pemetaan lahan. Kita juga akan membandingkan metode <strong>Naive Bayes</strong> dengan <strong>K-Nearest Neighbors (KNN)</strong> untuk mengetahui algoritma mana yang berkinerja lebih akurat.</p>
+<p>Latar Belakang</p>
+<p>Pemerintah pusat maupun daerah memiliki kewajiban untuk merumuskan kebijakan tata ruang yang presisi, seperti Rencana Tata Ruang Wilayah (RTRW) dan pengawasan Rencana Detail Tata Ruang (RDTR). Kebijakan ini sangat bergantung pada pemutakhiran data tutupan dan penggunaan lahan (LULC). Sayangnya, instansi pemerintahan sering kali menghadapi kendala keterlambatan data karena audit lapangan secara manual memakan waktu berbulan-bulan dan menghabiskan anggaran negara yang besar. Akibatnya, pelanggaran zonasi—seperti konversi lahan sawah produktif menjadi perumahan atau deforestasi mangrove ilegal—sering terlambat ditindak.</p>
+<p>Dari kacamata seorang programmer atau data engineer di sektor gov-tech, ketersediaan citra satelit berkala seperti Sentinel-2A merupakan sumber data mentah (raw data) bervolume raksasa yang tidak bisa lagi diproses secara manual oleh analis manusia. Tantangan utamanya adalah bagaimana membangun sebuah sistem otomasi yang dapat menarik (ingest) data satelit, memproses piksel-piksel tersebut secara komputasional, dan mendistribusikan hasil klasifikasinya kepada para pemangku kebijakan dalam bentuk dashboard atau API yang terintegrasi dengan sistem informasi geografis (GIS) pemerintah.</p>
+<p>Tujuan Bisnis</p>
+<p>Proyek ini bertujuan untuk menjembatani kebutuhan analitik pemerintah dengan solusi rekayasa perangkat lunak melalui penerapan Machine Learning. Secara spesifik, tujuan ini dibagi menjadi dua dimensi utama:</p>
+<p>Dimensi Kebijakan Publik (Dampak Sosio-Ekonomi):</p>
+<p>Memberikan landasan data yang mutakhir dan real-time bagi pemerintah untuk mengambil keputusan strategis. Dengan memetakan lahan ke dalam 6 kelas utama (Sawah, Bangunan, Mangrove, Hutan, Laut, dan Danau), pemerintah dapat secara otomatis memantau ketahanan pangan (luas sawah), laju urbanisasi (ekspansi bangunan), pelestarian lingkungan (mangrove dan hutan), serta batas sumber daya air. Hal ini mempercepat audit tata ruang dari hitungan bulan menjadi hitungan jam.</p>
+<p>Dimensi Pengembangan Perangkat Lunak (Teknis &amp; Operasional):</p>
+<p>Membangun pipeline pemrosesan data geospasial yang skalabel dan efisien. Sebagai programmer, tujuan teknisnya adalah merancang eksperimen untuk membandingkan performa algoritma Naive Bayes dan K-Nearest Neighbors (KNN). Evaluasi tidak hanya berfokus pada akurasi klasifikasi kelas lahan, tetapi juga pada efisiensi komputasi (waktu training dan inference), sehingga model yang terpilih dapat di-deploy ke dalam arsitektur peladen (server) pemerintah tanpa membebani infrastruktur secara berlebihan.</p>
+<p>Kriteria Keberhasilan (Success Criteria)</p>
+<p>Keberhasilan Teknis: Model Machine Learning yang terpilih (antara Naive Bayes atau KNN) mampu mengklasifikasikan 6 kelas LULC dengan metrik akurasi (misalnya F1-Score) di atas batas ambang yang disepakati, dan script pipeline dapat berjalan secara otomatis tanpa intervensi manual.</p>
+<p>Keberhasilan Bisnis/Kebijakan: Terciptanya purwarupa aplikasi atau layanan API yang memampukan analis tata ruang pemerintah untuk melihat perubahan lahan secara interaktif, yang berujung pada efisiensi waktu operasional survei lapangan hingga lebih dari 60%.</p>
 </section>
 
     <script type="text/x-thebe-config">
@@ -463,7 +471,7 @@ Mengaplikasikan teknik <em>Machine Learning</em> untuk mengklasifikasikan wilaya
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">lands</p>
+        <p class="prev-next-title">LULC</p>
       </div>
     </a>
     <a class="right-next"

@@ -12,9 +12,26 @@ kernelspec:
 ---
 
 # 1. Business Understanding
+Latar Belakang
 
-**Latar Belakang**  
-Informasi mengenai tutupan dan penggunaan lahan sangat penting dalam perencanaan wilayah, manajemen sumber daya alam, hingga memantau perubahan iklim. Pendataan lahan secara manual dengan terjun langsung ke lapangan memakan waktu dan biaya operasional yang sangat besar. Untungnya, satelit observasi bumi seperti **Sentinel-2A** mengorbit dan mengambil citra bumi secara berkala. Namun, membedakan mana Sawah, Danau, atau Hutan dari citra satelit mentah tetap memerlukan pengamatan khusus dari tenaga ahli.
+Pemerintah pusat maupun daerah memiliki kewajiban untuk merumuskan kebijakan tata ruang yang presisi, seperti Rencana Tata Ruang Wilayah (RTRW) dan pengawasan Rencana Detail Tata Ruang (RDTR). Kebijakan ini sangat bergantung pada pemutakhiran data tutupan dan penggunaan lahan (LULC). Sayangnya, instansi pemerintahan sering kali menghadapi kendala keterlambatan data karena audit lapangan secara manual memakan waktu berbulan-bulan dan menghabiskan anggaran negara yang besar. Akibatnya, pelanggaran zonasi—seperti konversi lahan sawah produktif menjadi perumahan atau deforestasi mangrove ilegal—sering terlambat ditindak.
 
-**Tujuan Bisnis**  
-Mengaplikasikan teknik *Machine Learning* untuk mengklasifikasikan wilayah-wilayah di citra satelit ke dalam 6 kelas utama (Sawah, Bangunan, Mangrove, Hutan, Laut, dan Danau) secara otomatis, guna mempercepat efisiensi waktu pemetaan lahan. Kita juga akan membandingkan metode **Naive Bayes** dengan **K-Nearest Neighbors (KNN)** untuk mengetahui algoritma mana yang berkinerja lebih akurat.
+Dari kacamata seorang programmer atau data engineer di sektor gov-tech, ketersediaan citra satelit berkala seperti Sentinel-2A merupakan sumber data mentah (raw data) bervolume raksasa yang tidak bisa lagi diproses secara manual oleh analis manusia. Tantangan utamanya adalah bagaimana membangun sebuah sistem otomasi yang dapat menarik (ingest) data satelit, memproses piksel-piksel tersebut secara komputasional, dan mendistribusikan hasil klasifikasinya kepada para pemangku kebijakan dalam bentuk dashboard atau API yang terintegrasi dengan sistem informasi geografis (GIS) pemerintah.
+
+Tujuan Bisnis
+
+Proyek ini bertujuan untuk menjembatani kebutuhan analitik pemerintah dengan solusi rekayasa perangkat lunak melalui penerapan Machine Learning. Secara spesifik, tujuan ini dibagi menjadi dua dimensi utama:
+
+Dimensi Kebijakan Publik (Dampak Sosio-Ekonomi):
+
+Memberikan landasan data yang mutakhir dan real-time bagi pemerintah untuk mengambil keputusan strategis. Dengan memetakan lahan ke dalam 6 kelas utama (Sawah, Bangunan, Mangrove, Hutan, Laut, dan Danau), pemerintah dapat secara otomatis memantau ketahanan pangan (luas sawah), laju urbanisasi (ekspansi bangunan), pelestarian lingkungan (mangrove dan hutan), serta batas sumber daya air. Hal ini mempercepat audit tata ruang dari hitungan bulan menjadi hitungan jam.
+
+Dimensi Pengembangan Perangkat Lunak (Teknis & Operasional):
+
+Membangun pipeline pemrosesan data geospasial yang skalabel dan efisien. Sebagai programmer, tujuan teknisnya adalah merancang eksperimen untuk membandingkan performa algoritma Naive Bayes dan K-Nearest Neighbors (KNN). Evaluasi tidak hanya berfokus pada akurasi klasifikasi kelas lahan, tetapi juga pada efisiensi komputasi (waktu training dan inference), sehingga model yang terpilih dapat di-deploy ke dalam arsitektur peladen (server) pemerintah tanpa membebani infrastruktur secara berlebihan.
+
+Kriteria Keberhasilan (Success Criteria)
+
+Keberhasilan Teknis: Model Machine Learning yang terpilih (antara Naive Bayes atau KNN) mampu mengklasifikasikan 6 kelas LULC dengan metrik akurasi (misalnya F1-Score) di atas batas ambang yang disepakati, dan script pipeline dapat berjalan secara otomatis tanpa intervensi manual.
+
+Keberhasilan Bisnis/Kebijakan: Terciptanya purwarupa aplikasi atau layanan API yang memampukan analis tata ruang pemerintah untuk melihat perubahan lahan secara interaktif, yang berujung pada efisiensi waktu operasional survei lapangan hingga lebih dari 60%.
